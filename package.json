@@ -1,7 +1,7 @@
 {
-  "name": "fanfik-go",
-  "version": "2.0.0",
-  "description": "FanFik GO - динамичная платформа для фанфиков с Telegram 2FA",
+  "name": "fanfik",
+  "version": "1.0.0",
+  "description": "Платформа для фанфиков с двухфакторной аутентификацией через Telegram",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
