@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: cozy-fanfic-cafe
+    name: fanfik-go
     env: node
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.11.0
       - key: JWT_SECRET
         generateValue: true
       - key: TELEGRAM_BOT_TOKEN
