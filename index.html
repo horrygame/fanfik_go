@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FanFik GO</title>
+    <title>FanFik - Платформа для фанфиков</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Georgia', serif;
             background: linear-gradient(135deg, #f5e9dc 0%, #e6d3c1 100%);
             color: #5d4037;
             line-height: 1.6;
@@ -27,41 +27,21 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.25);
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
             position: relative;
-            overflow: hidden;
-            border-bottom: 4px solid #d2691e;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(to right, #f5e9dc, #d2691e, #f5e9dc);
+            border-bottom: 3px solid #d2691e;
         }
 
         .logo {
-            font-size: 2.5rem;
-            font-weight: 800;
+            font-size: 2.2rem;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 15px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-family: 'Arial Black', sans-serif;
+            gap: 12px;
         }
 
         .logo i {
             color: #f5e9dc;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
         }
 
         .tagline {
@@ -69,96 +49,66 @@
             color: #f5e9dc;
             margin-top: 0.3rem;
             font-style: italic;
-            font-weight: 300;
         }
 
         .auth-buttons {
             display: flex;
-            gap: 1.2rem;
+            gap: 1rem;
             align-items: center;
         }
 
         button {
-            background: linear-gradient(145deg, #a0522d, #8b4513);
+            background: linear-gradient(to bottom, #a0522d, #8b4513);
             color: white;
             border: none;
-            padding: 0.9rem 1.8rem;
-            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 600;
             font-size: 1rem;
-            box-shadow: 0 4px 8px rgba(139, 69, 19, 0.2);
+            box-shadow: 0 3px 8px rgba(139, 69, 19, 0.2);
             display: flex;
             align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
+            gap: 8px;
         }
 
         button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(139, 69, 19, 0.3);
-            background: linear-gradient(145deg, #b5651d, #964b00);
-        }
-
-        button:active {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(139, 69, 19, 0.3);
+            background: linear-gradient(to bottom, #b5651d, #964b00);
         }
 
         .admin-btn {
-            background: linear-gradient(145deg, #d2691e, #b5651d);
+            background: linear-gradient(to bottom, #d2691e, #b5651d);
         }
 
         .telegram-btn-header {
-            background: linear-gradient(145deg, #0088cc, #005c99);
-            padding: 0.8rem 1.5rem;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(rgba(139, 69, 19, 0.1), rgba(139, 69, 19, 0.05));
-            margin-bottom: 3rem;
-            border-radius: 0 0 30px 30px;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            color: #8b4513;
-            margin-bottom: 1rem;
-            font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .hero p {
-            font-size: 1.3rem;
-            color: #5d4037;
-            max-width: 800px;
-            margin: 0 auto 2rem;
-            line-height: 1.8;
+            background: linear-gradient(to bottom, #0088cc, #005c99);
+            padding: 0.7rem 1.3rem;
         }
 
         .search-container {
-            max-width: 900px;
-            margin: 2rem auto 4rem;
+            max-width: 800px;
+            margin: 2rem auto 3rem;
             padding: 0 1.5rem;
             position: relative;
         }
 
         #searchInput {
             width: 100%;
-            padding: 1.3rem 1.8rem;
-            border: 3px solid #a0522d;
-            border-radius: 12px;
+            padding: 1.1rem 1.6rem;
+            border: 2px solid #a0522d;
+            border-radius: 8px;
             font-size: 1.1rem;
             background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 8px 25px rgba(139, 69, 19, 0.15);
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.1);
             transition: all 0.3s ease;
         }
 
         #searchInput:focus {
             outline: none;
-            box-shadow: 0 8px 30px rgba(139, 69, 19, 0.25);
+            box-shadow: 0 4px 20px rgba(139, 69, 19, 0.2);
             border-color: #d2691e;
         }
 
@@ -168,25 +118,25 @@
             top: 50%;
             transform: translateY(-50%);
             color: #a0522d;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
         }
 
         .fics-container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 2.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
         }
 
         .fic-card {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.15);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 2px solid rgba(210, 105, 30, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 1.8rem;
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.15);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(210, 105, 30, 0.1);
             position: relative;
             overflow: hidden;
         }
@@ -196,51 +146,48 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 6px;
-            height: 100%;
-            background: linear-gradient(to bottom, #d2691e, #8b4513);
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, #d2691e, #f5e9dc);
         }
 
         .fic-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(139, 69, 19, 0.25);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(139, 69, 19, 0.2);
         }
 
         .fic-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             color: #8b4513;
-            margin-bottom: 1rem;
-            font-weight: 700;
-            line-height: 1.3;
+            margin-bottom: 0.8rem;
+            font-weight: bold;
         }
 
         .fic-author {
             color: #a0522d;
             font-style: italic;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 500;
+            gap: 8px;
         }
 
         .fic-genre {
             display: inline-block;
-            background: linear-gradient(145deg, #f5e9dc, #e6d3c1);
-            padding: 0.5rem 1.2rem;
-            border-radius: 25px;
+            background: linear-gradient(to bottom, #f5e9dc, #e6d3c1);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
             font-size: 0.9rem;
             margin-bottom: 1rem;
             border: 1px solid rgba(210, 105, 30, 0.2);
-            font-weight: 600;
             margin-right: 0.5rem;
         }
 
         .fic-age {
             display: inline-block;
-            background: rgba(139, 69, 19, 0.15);
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
+            background: rgba(139, 69, 19, 0.1);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
             font-size: 0.85rem;
             font-weight: 600;
             color: #8b4513;
@@ -248,34 +195,22 @@
 
         .fic-preview {
             color: #666;
-            line-height: 1.8;
+            line-height: 1.7;
             margin-top: 1.5rem;
-            border-top: 2px solid rgba(210, 105, 30, 0.1);
-            padding-top: 1.5rem;
-            font-size: 1rem;
+            border-top: 1px solid rgba(210, 105, 30, 0.1);
+            padding-top: 1.2rem;
+            font-size: 0.95rem;
         }
 
         .create-fic-btn {
             position: fixed;
-            bottom: 2.5rem;
-            right: 2.5rem;
-            padding: 1.5rem 3rem;
-            font-size: 1.3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.3);
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.25);
             z-index: 100;
-            animation: pulse-glow 2s infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { 
-                transform: translateY(0);
-                box-shadow: 0 10px 30px rgba(139, 69, 19, 0.3);
-            }
-            50% { 
-                transform: translateY(-10px);
-                box-shadow: 0 15px 40px rgba(139, 69, 19, 0.5);
-            }
         }
 
         .modal {
@@ -285,57 +220,43 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.85);
+            background-color: rgba(0,0,0,0.7);
             z-index: 1000;
-            backdrop-filter: blur(8px);
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .modal-content {
-            background: linear-gradient(145deg, #ffffff, #f5e9dc);
+            background: linear-gradient(to bottom, #ffffff, #f5e9dc);
             margin: 3% auto;
-            padding: 3rem;
+            padding: 2.5rem;
             width: 90%;
-            max-width: 1400px;
-            max-height: 90vh;
+            max-width: 1200px;
+            max-height: 85vh;
             overflow-y: auto;
-            border-radius: 20px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             position: relative;
-            border: 3px solid rgba(210, 105, 30, 0.3);
-            animation: slideUp 0.4s ease;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            border: 2px solid rgba(210, 105, 30, 0.2);
         }
 
         .close-btn {
             position: absolute;
-            right: 1.8rem;
-            top: 1.8rem;
-            font-size: 2.2rem;
+            right: 1.5rem;
+            top: 1.5rem;
+            font-size: 2rem;
             cursor: pointer;
             color: #8b4513;
             transition: all 0.3s ease;
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: rgba(139, 69, 19, 0.1);
         }
 
         .close-btn:hover {
-            background: rgba(139, 69, 19, 0.2);
-            transform: rotate(180deg);
+            background: rgba(139, 69, 19, 0.1);
+            transform: rotate(90deg);
         }
 
         .telegram-modal-content {
@@ -344,90 +265,83 @@
         }
 
         .telegram-icon {
-            font-size: 4rem;
+            font-size: 3.5rem;
             color: #0088cc;
-            margin-bottom: 2rem;
-            animation: spin 3s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            margin-bottom: 1.5rem;
         }
 
         .telegram-instruction {
             background: rgba(0, 136, 204, 0.1);
-            padding: 2rem;
-            border-radius: 15px;
-            margin: 2rem 0;
+            padding: 1.8rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
             text-align: left;
-            border-left: 5px solid #0088cc;
+            border-left: 4px solid #0088cc;
         }
 
         .telegram-instruction h3 {
             color: #0088cc;
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
+            margin-bottom: 1.2rem;
+            font-size: 1.3rem;
         }
 
         .telegram-instruction ol {
             padding-left: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
 
         .telegram-instruction li {
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             line-height: 1.6;
             color: #333;
         }
 
         .telegram-instruction code {
             background: rgba(0, 0, 0, 0.1);
-            padding: 0.3rem 0.6rem;
-            border-radius: 5px;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
             font-family: monospace;
-            font-size: 1.1rem;
         }
 
         .telegram-link-btn {
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            background: linear-gradient(145deg, #0088cc, #005c99);
+            gap: 10px;
+            background: linear-gradient(to bottom, #0088cc, #005c99);
             color: white;
             text-decoration: none;
-            padding: 1rem 2rem;
-            border-radius: 10px;
+            padding: 0.9rem 1.8rem;
+            border-radius: 8px;
             font-weight: 600;
             font-size: 1.1rem;
-            margin: 1.5rem 0;
+            margin: 1.2rem 0;
             transition: all 0.3s ease;
         }
 
         .telegram-link-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.3);
         }
 
         .telegram-input-group {
-            margin: 2.5rem 0;
+            margin: 2rem 0;
             text-align: left;
         }
 
         .telegram-input-group label {
             display: block;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.6rem;
             font-weight: 600;
             color: #5d4037;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         .telegram-input-group input {
             width: 100%;
-            padding: 1.2rem;
-            border: 3px solid #0088cc;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            padding: 1rem;
+            border: 2px solid #0088cc;
+            border-radius: 8px;
+            font-size: 1rem;
             background: white;
             transition: all 0.3s ease;
         }
@@ -438,177 +352,122 @@
         }
 
         .bind-telegram-btn {
-            background: linear-gradient(145deg, #4CAF50, #2E7D32);
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
             width: 100%;
-            padding: 1.2rem;
-            font-size: 1.2rem;
-            margin-top: 1rem;
+            padding: 1rem;
+            font-size: 1.1rem;
+            margin-top: 0.8rem;
         }
 
         .creation-container {
             display: flex;
-            gap: 3rem;
-            margin-top: 2.5rem;
+            gap: 2rem;
+            margin-top: 2rem;
         }
 
         .left-panel {
-            width: 350px;
+            width: 300px;
             flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 2rem;
-            border-radius: 15px;
-            border: 2px solid rgba(210, 105, 30, 0.2);
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1.8rem;
+            border-radius: 12px;
+            border: 1px solid rgba(210, 105, 30, 0.2);
         }
 
         .main-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
         .chapters-panel {
-            width: 300px;
+            width: 250px;
             flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 2rem;
-            border-radius: 15px;
-            border: 2px solid rgba(210, 105, 30, 0.2);
-            max-height: 600px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1.8rem;
+            border-radius: 12px;
+            border: 1px solid rgba(210, 105, 30, 0.2);
+            max-height: 500px;
             overflow-y: auto;
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 1.1rem;
-            margin-bottom: 1.5rem;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
             border: 2px solid rgba(160, 82, 45, 0.3);
-            border-radius: 10px;
-            font-size: 1.05rem;
+            border-radius: 8px;
+            font-size: 1rem;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.95);
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Georgia', serif;
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #d2691e;
-            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.2);
+            box-shadow: 0 4px 12px rgba(210, 105, 30, 0.2);
         }
 
         textarea {
-            min-height: 500px;
+            min-height: 400px;
             resize: vertical;
-            line-height: 1.7;
-            padding: 1.5rem;
+            line-height: 1.6;
+            padding: 1.2rem;
         }
 
         .chapter-item {
-            padding: 1.2rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(145deg, #f5e9dc, #e6d3c1);
-            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(to bottom, #f5e9dc, #e6d3c1);
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 2px solid rgba(210, 105, 30, 0.2);
-            position: relative;
-            overflow: hidden;
+            border: 1px solid rgba(210, 105, 30, 0.2);
         }
 
         .chapter-item:hover {
-            background: linear-gradient(145deg, #e6d3c1, #d7b9a0);
+            background: linear-gradient(to bottom, #e6d3c1, #d7b9a0);
             transform: translateX(5px);
         }
 
         .chapter-item.active {
-            background: linear-gradient(145deg, #d2691e, #b5651d);
+            background: linear-gradient(to bottom, #d2691e, #b5651d);
             color: white;
             border-color: #8b4513;
         }
 
         .mark-badge {
             display: inline-block;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin-left: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .mark-liked { background: linear-gradient(145deg, #4CAF50, #2E7D32); color: white; }
-        .mark-moderator { background: linear-gradient(145deg, #FF9800, #EF6C00); color: white; }
-        .mark-featured { background: linear-gradient(145deg, #9C27B0, #6A1B9A); color: white; }
-        .mark-new { background: linear-gradient(145deg, #2196F3, #0D47A1); color: white; }
-
-        .stats-bar {
-            display: flex;
-            justify-content: space-around;
-            background: rgba(139, 69, 19, 0.1);
-            padding: 1.5rem;
+            padding: 0.3rem 0.8rem;
             border-radius: 15px;
-            margin: 2rem auto;
-            max-width: 1200px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            font-weight: 600;
         }
 
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #8b4513;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #5d4037;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .mark-liked { background: linear-gradient(to bottom, #4CAF50, #2E7D32); color: white; }
+        .mark-moderator { background: linear-gradient(to bottom, #FF9800, #EF6C00); color: white; }
+        .mark-featured { background: linear-gradient(to bottom, #9C27B0, #6A1B9A); color: white; }
+        .mark-new { background: linear-gradient(to bottom, #2196F3, #0D47A1); color: white; }
 
         .empty-state {
             text-align: center;
-            padding: 5rem 2rem;
+            padding: 4rem 2rem;
             color: #8b4513;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             grid-column: 1 / -1;
         }
 
         .empty-state i {
-            font-size: 5rem;
-            margin-bottom: 2rem;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
             color: #d2691e;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
-        .trending-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            justify-content: center;
-            margin: 3rem 0;
-            padding: 0 2rem;
-        }
-
-        .trending-tag {
-            background: linear-gradient(145deg, #d2691e, #8b4513);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .trending-tag:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.3);
-        }
-
-        @media (max-width: 1200px) {
+        @media (max-width: 1100px) {
             .creation-container {
                 flex-direction: column;
             }
@@ -616,33 +475,32 @@
             .left-panel, .chapters-panel {
                 width: 100%;
             }
-            
-            .fics-container {
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            }
         }
 
         @media (max-width: 768px) {
-            .logo {
-                font-size: 2rem;
-            }
-            
-            .hero h1 {
-                font-size: 2.5rem;
+            header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
             }
             
             .auth-buttons {
-                gap: 0.8rem;
-            }
-            
-            button {
-                padding: 0.7rem 1.2rem;
-                font-size: 0.9rem;
-            }
-            
-            .stats-bar {
                 flex-wrap: wrap;
-                gap: 1.5rem;
+                justify-content: center;
+            }
+            
+            .logo {
+                font-size: 1.8rem;
+            }
+            
+            .fics-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            .modal-content {
+                padding: 1.5rem;
+                margin: 5% auto;
             }
         }
     </style>
@@ -651,10 +509,10 @@
     <header>
         <div>
             <div class="logo">
-                <i class="fas fa-rocket"></i>
-                <span>FanFik GO</span>
+                <i class="fas fa-book"></i>
+                <span>FanFik</span>
             </div>
-            <div class="tagline">Твоя вселенная историй в движении</div>
+            <div class="tagline">Платформа для чтения и создания фанфиков</div>
         </div>
         <div class="auth-buttons">
             <button id="telegramBindBtn" class="telegram-btn-header" style="display: none;">
@@ -675,38 +533,9 @@
         </div>
     </header>
 
-    <div class="hero">
-        <h1>Отправляйся в путешествие по вселенной историй</h1>
-        <p>Создавай, читай и делитесь своими фанфиками в динамичном сообществе FanFik GO. 
-           Быстрая публикация, мгновенная обратная связь и море вдохновения!</p>
-    </div>
-
-    <div class="stats-bar">
-        <div class="stat-item">
-            <span class="stat-number" id="totalFicsCount">0</span>
-            <span class="stat-label">Фанфиков</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-number" id="totalAuthorsCount">0</span>
-            <span class="stat-label">Авторов</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-number" id="totalChaptersCount">0</span>
-            <span class="stat-label">Глав</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-number" id="onlineUsersCount">0</span>
-            <span class="stat-label">Онлайн</span>
-        </div>
-    </div>
-
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="🔍 Поиск фанфиков по названию, автору или жанру...">
+        <input type="text" id="searchInput" placeholder="Поиск фанфиков по названию, автору или жанру...">
         <div class="search-icon"><i class="fas fa-search"></i></div>
-    </div>
-
-    <div class="trending-tags" id="trendingTags">
-        <!-- Трендовые теги будут загружены здесь -->
     </div>
 
     <div class="fics-container" id="ficsContainer">
@@ -714,40 +543,40 @@
     </div>
 
     <button class="create-fic-btn" id="createFicBtn" style="display: none;">
-        <i class="fas fa-paper-plane"></i> Запустить фанфик!
+        <i class="fas fa-plus"></i> Написать фанфик
     </button>
 
     <!-- Модальное окно создания фанфика -->
     <div id="createModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeCreateModal">&times;</span>
-            <h2><i class="fas fa-rocket"></i> Запуск нового фанфика</h2>
+            <h2><i class="fas fa-pen"></i> Создание фанфика</h2>
             <div class="creation-container">
                 <div class="left-panel">
-                    <h3><i class="fas fa-cogs"></i> Настройки запуска</h3>
-                    <input type="text" id="ficTitle" placeholder="Название миссии">
-                    <input type="text" id="ficAuthor" placeholder="Позывной автора">
-                    <input type="text" id="ficGenre" placeholder="Тип миссии (жанры через запятую)">
+                    <h3><i class="fas fa-info-circle"></i> Информация</h3>
+                    <input type="text" id="ficTitle" placeholder="Название произведения">
+                    <input type="text" id="ficAuthor" placeholder="Имя автора">
+                    <input type="text" id="ficGenre" placeholder="Жанр (через запятую)">
                     <select id="ficAge">
-                        <option value="0+">🚀 0+ - Вселенная доступна всем</option>
-                        <option value="12+">🛸 12+ - Для юных исследователей</option>
-                        <option value="16+">👽 16+ - Для опытных космонавтов</option>
-                        <option value="18+">⚠️ 18+ - Только для взрослых астронавтов</option>
+                        <option value="0+">0+ - Для всех возрастов</option>
+                        <option value="12+">12+ - Для подростков</option>
+                        <option value="16+">16+ - Для старших подростков</option>
+                        <option value="18+">18+ - Только для взрослых</option>
                     </select>
                     <button id="submitFicBtn">
-                        <i class="fas fa-play"></i> Запустить на проверку
+                        <i class="fas fa-paper-plane"></i> Отправить на рассмотрение
                     </button>
                 </div>
                 <div class="main-panel">
-                    <h3><i class="fas fa-book-open"></i> Бортовой журнал</h3>
-                    <input type="text" id="chapterTitle" placeholder="Название записи">
-                    <textarea id="ficContent" placeholder="Начинайте запись в бортовом журнале..."></textarea>
+                    <h3><i class="fas fa-edit"></i> Редактор</h3>
+                    <input type="text" id="chapterTitle" placeholder="Название главы">
+                    <textarea id="ficContent" placeholder="Начните писать свой фанфик здесь..."></textarea>
                 </div>
                 <div class="chapters-panel">
-                    <h3><i class="fas fa-clipboard-list"></i> Архив записей</h3>
+                    <h3><i class="fas fa-list"></i> Главы</h3>
                     <div id="chaptersList"></div>
                     <button id="addChapterBtn">
-                        <i class="fas fa-plus-circle"></i> Новая запись
+                        <i class="fas fa-plus"></i> Добавить главу
                     </button>
                 </div>
             </div>
@@ -758,23 +587,18 @@
     <div id="authModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeAuthModal">&times;</span>
-            <h2 id="authTitle"><i class="fas fa-user-astronaut"></i> Вход в систему</h2>
-            <input type="text" id="authUsername" placeholder="Позывной">
-            <input type="password" id="authPassword" placeholder="Код доступа">
-            <input type="text" id="authTelegram" placeholder="Telegram ID (для усиленной защиты)" style="display: none;">
-            <div id="telegramHelp" style="display: none; margin: 1.5rem 0; text-align: left;">
-                <p style="color: #0088cc; font-weight: 600;">
-                    <i class="fab fa-telegram"></i> Для усиленной защиты используйте Telegram 2FA
-                </p>
-                <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
-                    Введите ваш Telegram ID для получения кода подтверждения
-                </p>
+            <h2 id="authTitle"><i class="fas fa-user"></i> Вход</h2>
+            <input type="text" id="authUsername" placeholder="Имя пользователя">
+            <input type="password" id="authPassword" placeholder="Пароль">
+            <input type="text" id="authCode" placeholder="Код подтверждения (придет в Telegram)" style="display: none;">
+            <div id="authMessage" style="margin: 1rem 0; padding: 1rem; border-radius: 8px; display: none;">
+                <!-- Сообщения будут здесь -->
             </div>
             <button id="authSubmitBtn">
-                <i class="fas fa-sign-in-alt"></i> Войти на борт
+                <i class="fas fa-sign-in-alt"></i> Войти
             </button>
-            <p id="authSwitch" style="margin-top: 2rem; text-align: center; cursor: pointer; color: #8b4513; font-weight: 600;">
-                Новый на борту? Пройдите регистрацию
+            <p id="authSwitch" style="margin-top: 1.5rem; text-align: center; cursor: pointer; color: #8b4513; font-weight: 600;">
+                Нет аккаунта? Зарегистрируйтесь
             </p>
         </div>
     </div>
@@ -786,22 +610,22 @@
             <div class="telegram-icon">
                 <i class="fab fa-telegram"></i>
             </div>
-            <h2><i class="fas fa-shield-alt"></i> Усиленная защита аккаунта</h2>
-            <p style="color: #666; margin: 1.5rem 0; font-size: 1.1rem;">
-                Привяжите Telegram для двухфакторной аутентификации и мгновенных уведомлений
+            <h2><i class="fas fa-shield-alt"></i> Привязка Telegram для двухфакторной аутентификации</h2>
+            <p style="color: #666; margin: 1.2rem 0;">
+                Привяжите Telegram для безопасного входа и получения уведомлений
             </p>
             
             <div class="telegram-instruction">
-                <h3><i class="fas fa-list-ol"></i> Инструкция по привязке:</h3>
+                <h3><i class="fas fa-list-ol"></i> Инструкция:</h3>
                 <ol>
-                    <li>Нажмите кнопку ниже, чтобы перейти к нашему боту</li>
+                    <li>Нажмите кнопку ниже, чтобы перейти к боту</li>
                     <li>В боте отправьте команду <code>/start</code></li>
                     <li>Бот пришлет вам ваш уникальный <strong>Chat ID</strong></li>
                     <li>Скопируйте Chat ID и вставьте в поле ниже</li>
                     <li>Нажмите "Привязать" для завершения</li>
                 </ol>
                 
-                <div style="text-align: center; margin: 2rem 0;">
+                <div style="text-align: center; margin: 1.5rem 0;">
                     <a href="https://t.me/fanfik_go_bot" target="_blank" class="telegram-link-btn">
                         <i class="fab fa-telegram"></i> Перейти к боту @fanfik_go_bot
                     </a>
@@ -810,20 +634,17 @@
             
             <div class="telegram-input-group">
                 <label for="telegramChatId">
-                    <i class="fas fa-key"></i> Введите ваш Chat ID:
+                    <i class="fas fa-key"></i> Ваш Chat ID:
                 </label>
-                <input type="text" id="telegramChatId" placeholder="Например: 123456789">
-                <p style="color: #888; font-size: 0.9rem; margin-top: 0.5rem;">
-                    После ввода нажмите кнопку "Привязать" ниже
-                </p>
+                <input type="text" id="telegramChatId" placeholder="Введите Chat ID, полученный от бота">
             </div>
             
             <button id="bindTelegramBtn" class="bind-telegram-btn">
                 <i class="fas fa-link"></i> Привязать аккаунт
             </button>
             
-            <p style="color: #999; margin-top: 2rem; font-size: 0.9rem;">
-                <i class="fas fa-info-circle"></i> После привязки вы сможете использовать двухфакторную аутентификацию
+            <p style="color: #888; margin-top: 1.5rem; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> После привязки для входа потребуется код подтверждения из Telegram
             </p>
         </div>
     </div>
