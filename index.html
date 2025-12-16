@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FanFic Heaven</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #f5e9dc;
+            color: #5d4037;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #8b4513;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            background-color: #a0522d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #8b4513;
+        }
+
+        .admin-btn {
+            display: none;
+            background-color: #d2691e;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #a0522d;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .fics-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .fic-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .fic-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .fic-title {
+            font-size: 1.3rem;
+            color: #8b4513;
+            margin-bottom: 0.5rem;
+        }
+
+        .fic-author {
+            color: #a0522d;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .fic-genre {
+            display: inline-block;
+            background-color: #f5e9dc;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .create-fic-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .creation-container {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .left-panel {
+            width: 300px;
+            flex-shrink: 0;
+        }
+
+        .main-panel {
+            flex: 1;
+        }
+
+        .chapters-panel {
+            width: 250px;
+            flex-shrink: 0;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #a0522d;
+            border-radius: 4px;
+        }
+
+        textarea {
+            min-height: 400px;
+            resize: vertical;
+        }
+
+        .chapter-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: #f5e9dc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chapter-item:hover {
+            background-color: #e6d3c1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">FanFic Heaven</div>
+        <div class="auth-buttons">
+            <button id="loginBtn">Вход</button>
+            <button id="registerBtn">Регистрация</button>
+            <button id="logoutBtn" style="display: none;">Выход</button>
+            <button id="adminBtn" class="admin-btn">Админ-панель</button>
+        </div>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Поиск фанфиков по названию...">
+    </div>
+
+    <div class="fics-container" id="ficsContainer">
+        <!-- Фанфики будут загружены здесь -->
+    </div>
+
+    <button class="create-fic-btn" id="createFicBtn">Написать произведение</button>
+
+    <!-- Модальное окно создания фанфика -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeCreateModal">&times;</span>
+            <h2>Создание фанфика</h2>
+            <div class="creation-container">
+                <div class="left-panel">
+                    <input type="text" id="ficTitle" placeholder="Название произведения">
+                    <input type="text" id="ficAuthor" placeholder="Имя автора">
+                    <input type="text" id="ficGenre" placeholder="Жанр">
+                    <select id="ficAge">
+                        <option value="0+">0+</option>
+                        <option value="12+">12+</option>
+                        <option value="16+">16+</option>
+                        <option value="18+">18+</option>
+                    </select>
+                    <button id="submitFicBtn">Отправить на рассмотрение</button>
+                </div>
+                <div class="main-panel">
+                    <input type="text" id="chapterTitle" placeholder="Название главы">
+                    <textarea id="ficContent" placeholder="Текст фанфика..."></textarea>
+                </div>
+                <div class="chapters-panel">
+                    <h3>Главы</h3>
+                    <div id="chaptersList"></div>
+                    <button id="addChapterBtn">Добавить главу</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно входа/регистрации -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeAuthModal">&times;</span>
+            <h2 id="authTitle">Вход</h2>
+            <input type="text" id="authUsername" placeholder="Никнейм">
+            <input type="password" id="authPassword" placeholder="Пароль">
+            <input type="text" id="authTelegram" placeholder="Telegram ID (для 2FA)" style="display: none;">
+            <button id="authSubmitBtn">Войти</button>
+            <p id="authSwitch">Нет аккаунта? Зарегистрируйтесь</p>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>
