@@ -1,4 +1,4 @@
-class FanFikGOClient {
+class FanFikClient {
     constructor() {
         this.apiBase = window.location.origin;
         this.currentUser = null;
@@ -13,9 +13,6 @@ class FanFikGOClient {
         this.loadFics();
         this.setupEventListeners();
         await this.checkAuth();
-        this.loadStats();
-        this.loadTrendingTags();
-        this.setupRecommendationRefresh();
     }
 
     setupEventListeners() {
@@ -70,7 +67,7 @@ class FanFikGOClient {
                     this.currentUser = user;
                     this.updateUIAfterLogin();
                     
-                    // Проверяем, привязан ли Telegram
+                    // Показываем кнопку привязки Telegram, если не привязан
                     if (!user.hasTelegram) {
                         document.getElementById('telegramBindBtn').style.display = 'block';
                     }
@@ -85,20 +82,26 @@ class FanFikGOClient {
     }
 
     async handleAuth() {
-        const username = document.getElementById('authUsername').value;
+        const username = document.getElementById('authUsername').value.trim();
         const password = document.getElementById('authPassword').value;
-        const telegramId = document.getElementById('authTelegram').value;
+        const code = document.getElementById('authCode').value.trim();
+        const authMessage = document.getElementById('authMessage');
         
         const isLogin = document.getElementById('authTitle').textContent.includes('Вход');
         
         if (!username || !password) {
-            alert('Заполните позывной и код доступа');
+            this.showAuthMessage('Введите имя пользователя и пароль', 'error');
             return;
         }
         
         try {
             const endpoint = isLogin ? '/api/login' : '/api/register';
-            const payload = isLogin ? { username, password, telegramId } : { username, password };
+            const payload = { username, password };
+            
+            // Добавляем код подтверждения, если это вход и код введен
+            if (isLogin && code) {
+                payload.code = code;
+            }
             
             const response = await fetch(`${this.apiBase}${endpoint}`, {
                 method: 'POST',
@@ -110,7 +113,9 @@ class FanFikGOClient {
             
             if (response.ok) {
                 if (data.require2FA) {
-                    this.showTelegramField();
+                    // Показываем поле для ввода кода
+                    document.getElementById('authCode').style.display = 'block';
+                    this.showAuthMessage('Код подтверждения отправлен в Telegram. Введите его ниже.', 'info');
                     return;
                 }
                 
@@ -124,15 +129,33 @@ class FanFikGOClient {
                         document.getElementById('telegramBindBtn').style.display = 'block';
                     }
                     
-                    alert(isLogin ? 'Добро пожаловать на борт!' : 'Регистрация успешна! Добро пожаловать!');
+                    this.showAuthMessage(isLogin ? 'Вход выполнен!' : 'Регистрация успешна!', 'success', true);
+                    setTimeout(() => {
+                        this.showAuthMessage('', '', false);
+                    }, 2000);
                 }
             } else {
-                alert(data.error || 'Ошибка авторизации');
+                this.showAuthMessage(data.error || 'Ошибка авторизации', 'error');
             }
         } catch (error) {
             console.error('Auth error:', error);
-            alert('Ошибка соединения с сервером');
+            this.showAuthMessage('Ошибка соединения с сервером', 'error');
         }
+    }
+
+    showAuthMessage(message, type, show = true) {
+        const authMessage = document.getElementById('authMessage');
+        if (!show) {
+            authMessage.style.display = 'none';
+            return;
+        }
+        
+        authMessage.textContent = message;
+        authMessage.style.display = 'block';
+        authMessage.style.backgroundColor = type === 'error' ? '#ffebee' : 
+                                          type === 'info' ? '#e3f2fd' : '#e8f5e9';
+        authMessage.style.color = type === 'error' ? '#c62828' : 
+                                 type === 'info' ? '#1565c0' : '#2e7d32';
     }
 
     async bindTelegram() {
@@ -162,7 +185,7 @@ class FanFikGOClient {
             const data = await response.json();
             
             if (response.ok) {
-                alert('Telegram успешно привязан! Теперь вы можете использовать двухфакторную аутентификацию.');
+                alert('Telegram успешно привязан! Теперь при входе потребуется код подтверждения из Telegram.');
                 document.getElementById('telegramBindBtn').style.display = 'none';
                 this.hideTelegramModal();
             } else {
@@ -204,7 +227,6 @@ class FanFikGOClient {
         document.getElementById('telegramBindBtn').style.display = 'none';
         document.getElementById('createFicBtn').style.display = 'none';
         this.loadFics();
-        this.loadStats();
     }
 
     showAuthModal(mode) {
@@ -212,27 +234,25 @@ class FanFikGOClient {
         const title = document.getElementById('authTitle');
         const submitBtn = document.getElementById('authSubmitBtn');
         const switchText = document.getElementById('authSwitch');
-        const telegramHelp = document.getElementById('telegramHelp');
+        
+        // Сбрасываем форму
+        document.getElementById('authUsername').value = '';
+        document.getElementById('authPassword').value = '';
+        document.getElementById('authCode').value = '';
+        document.getElementById('authCode').style.display = 'none';
+        this.showAuthMessage('', '', false);
         
         if (mode === 'login') {
-            title.innerHTML = '<i class="fas fa-user-astronaut"></i> Вход в систему';
-            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти на борт';
-            switchText.textContent = 'Новый на борту? Пройдите регистрацию';
-            telegramHelp.style.display = 'block';
+            title.innerHTML = '<i class="fas fa-user"></i> Вход';
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
+            switchText.textContent = 'Нет аккаунта? Зарегистрируйтесь';
         } else {
-            title.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация экипажа';
+            title.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация';
             submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Зарегистрироваться';
-            switchText.textContent = 'Уже в экипаже? Войдите на борт';
-            telegramHelp.style.display = 'none';
+            switchText.textContent = 'Уже есть аккаунт? Войдите';
         }
         
         modal.style.display = 'block';
-    }
-
-    showTelegramField() {
-        document.getElementById('authTelegram').style.display = 'block';
-        document.getElementById('telegramHelp').style.display = 'block';
-        document.getElementById('authSubmitBtn').innerHTML = '<i class="fas fa-shield-alt"></i> Подтвердить 2FA';
     }
 
     switchAuthMode() {
@@ -246,16 +266,11 @@ class FanFikGOClient {
 
     hideAuthModal() {
         document.getElementById('authModal').style.display = 'none';
-        document.getElementById('authTelegram').style.display = 'none';
-        document.getElementById('telegramHelp').style.display = 'none';
-        document.getElementById('authTelegram').value = '';
-        document.getElementById('authUsername').value = '';
-        document.getElementById('authPassword').value = '';
     }
 
     showCreateModal() {
         if (!this.currentUser) {
-            alert('Для создания фанфика необходимо войти на борт');
+            alert('Для создания фанфика необходимо войти');
             return;
         }
         
@@ -273,11 +288,11 @@ class FanFikGOClient {
     }
 
     addChapter() {
-        const title = document.getElementById('chapterTitle').value;
-        const content = document.getElementById('ficContent').value;
+        const title = document.getElementById('chapterTitle').value.trim();
+        const content = document.getElementById('ficContent').value.trim();
         
         if (!title || !content) {
-            alert('Заполните название и текст записи');
+            alert('Заполните название и текст главы');
             return;
         }
         
@@ -308,14 +323,11 @@ class FanFikGOClient {
             const div = document.createElement('div');
             div.className = `chapter-item ${index === this.currentFic.currentChapter ? 'active' : ''}`;
             div.innerHTML = `
-                <div style="font-size: 0.9rem; color: #8b4513; margin-bottom: 0.3rem;">
-                    Запись ${index + 1}
+                <div style="font-weight: 600; margin-bottom: 0.3rem;">
+                    Глава ${index + 1}: ${chapter.title}
                 </div>
-                <div style="font-weight: 600; font-size: 1rem;">
-                    ${chapter.title}
-                </div>
-                <div style="font-size: 0.85rem; margin-top: 0.5rem; color: #666;">
-                    ${chapter.content.substring(0, 50)}...
+                <div style="font-size: 0.9rem; color: #666;">
+                    ${chapter.content.substring(0, 60)}...
                 </div>
             `;
             div.addEventListener('click', () => this.loadChapter(index));
@@ -333,13 +345,13 @@ class FanFikGOClient {
 
     async submitFic() {
         if (!this.currentFic.chapters.length) {
-            alert('Добавьте хотя бы одну запись');
+            alert('Добавьте хотя бы одну главу');
             return;
         }
         
-        const title = document.getElementById('ficTitle').value;
-        const author = document.getElementById('ficAuthor').value;
-        const genre = document.getElementById('ficGenre').value;
+        const title = document.getElementById('ficTitle').value.trim();
+        const author = document.getElementById('ficAuthor').value.trim();
+        const genre = document.getElementById('ficGenre').value.trim();
         const age = document.getElementById('ficAge').value;
         
         if (!title || !author || !genre) {
@@ -368,13 +380,12 @@ class FanFikGOClient {
             });
             
             if (response.ok) {
-                alert('Фанфик запущен на проверку! Ожидайте одобрения модерации.');
+                alert('Фанфик отправлен на рассмотрение! Ожидайте одобрения.');
                 this.hideCreateModal();
                 this.loadFics();
-                this.loadStats();
             } else {
                 const error = await response.json();
-                alert(error.error || 'Ошибка при запуске');
+                alert(error.error || 'Ошибка при отправке');
             }
         } catch (error) {
             console.error('Submit error:', error);
@@ -391,46 +402,6 @@ class FanFikGOClient {
             console.error('Load fics error:', error);
             this.showEmptyState();
         }
-    }
-
-    async loadStats() {
-        try {
-            const response = await fetch(`${this.apiBase}/api/stats`);
-            const stats = await response.json();
-            
-            document.getElementById('totalFicsCount').textContent = stats.totalFics || '0';
-            document.getElementById('totalAuthorsCount').textContent = stats.totalAuthors || '0';
-            document.getElementById('totalChaptersCount').textContent = stats.totalChapters || '0';
-            document.getElementById('onlineUsersCount').textContent = stats.onlineUsers || Math.floor(Math.random() * 50) + 10;
-        } catch (error) {
-            console.error('Load stats error:', error);
-        }
-    }
-
-    async loadTrendingTags() {
-        try {
-            const response = await fetch(`${this.apiBase}/api/trending-tags`);
-            const tags = await response.json();
-            this.displayTrendingTags(tags);
-        } catch (error) {
-            console.error('Load trending tags error:', error);
-        }
-    }
-
-    displayTrendingTags(tags) {
-        const container = document.getElementById('trendingTags');
-        container.innerHTML = '';
-        
-        tags.forEach(tag => {
-            const tagElement = document.createElement('div');
-            tagElement.className = 'trending-tag';
-            tagElement.textContent = `#${tag}`;
-            tagElement.addEventListener('click', () => {
-                document.getElementById('searchInput').value = tag;
-                this.searchFics(tag);
-            });
-            container.appendChild(tagElement);
-        });
     }
 
     displayFics(fics) {
@@ -463,10 +434,10 @@ class FanFikGOClient {
                 'new': 'mark-new'
             };
             const markTexts = {
-                'liked': '🔥 РЕКОМЕНДАЦИЯ',
-                'moderator': '👑 АВТОР МОДЕРАЦИИ',
-                'featured': '⭐ ИЗБРАННОЕ',
-                'new': '🆕 НОВИНКА'
+                'liked': '👍 Рекомендация',
+                'moderator': '👑 От модератора',
+                'featured': '⭐ Избранное',
+                'new': '🆕 Новинка'
             };
             markBadge = `<span class="mark-badge ${markClasses[fic.mark]}">${markTexts[fic.mark]}</span>`;
         }
@@ -478,61 +449,44 @@ class FanFikGOClient {
         card.innerHTML = `
             <h3 class="fic-title">${fic.title} ${markBadge}</h3>
             <p class="fic-author">
-                <i class="fas fa-user-astronaut"></i> ${fic.author}
+                <i class="fas fa-user"></i> ${fic.author}
                 <span class="fic-age">${fic.age}</span>
             </p>
-            <div style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 1.2rem;">
                 ${genreBadges}
             </div>
             <div class="fic-preview">
-                <strong>Первая запись:</strong><br>
-                ${fic.chapters[0]?.content.substring(0, 250)}...
+                ${fic.chapters[0]?.content.substring(0, 200)}...
             </div>
-            <div style="margin-top: 1.5rem; font-size: 0.9rem; color: #888;">
-                <i class="fas fa-calendar"></i> Запущено: ${new Date(fic.createdAt).toLocaleDateString('ru-RU')}
+            <div style="margin-top: 1.2rem; font-size: 0.9rem; color: #888;">
+                <i class="fas fa-calendar"></i> Опубликован: ${new Date(fic.createdAt).toLocaleDateString('ru-RU')}
             </div>
         `;
         
-        card.addEventListener('click', () => {
-            this.viewFic(fic.id);
-        });
-        
         return card;
-    }
-
-    async viewFic(ficId) {
-        try {
-            const response = await fetch(`${this.apiBase}/api/fic/${ficId}`);
-            if (response.ok) {
-                const fic = await response.json();
-                this.showFicViewer(fic);
-            }
-        } catch (error) {
-            console.error('View fic error:', error);
-        }
-    }
-
-    showFicViewer(fic) {
-        // Можно добавить модальное окно для просмотра фанфика
-        alert(`Открытие фанфика "${fic.title}"\n\nВ будущем здесь будет полноценный просмотрщик с главами.`);
     }
 
     showEmptyState() {
         const container = document.getElementById('ficsContainer');
         container.innerHTML = `
             <div class="empty-state">
-                <i class="fas fa-rocket"></i>
-                <h3>Вселенная пустует</h3>
-                <p>Будьте первым, кто запустит фанфик в космос!</p>
-                <button id="writeFirstBtn" style="margin-top: 2rem;">
-                    <i class="fas fa-paper-plane"></i> Стать первопроходцем
-                </button>
+                <i class="fas fa-book"></i>
+                <h3>Пока нет фанфиков</h3>
+                <p>Будьте первым, кто опубликует фанфик!</p>
+                ${this.currentUser ? `
+                    <button id="writeFirstBtn" style="margin-top: 1.5rem;">
+                        <i class="fas fa-pen"></i> Написать первый фанфик
+                    </button>
+                ` : ''}
             </div>
         `;
         
-        document.getElementById('writeFirstBtn').addEventListener('click', () => {
-            this.showCreateModal();
-        });
+        const writeBtn = document.getElementById('writeFirstBtn');
+        if (writeBtn) {
+            writeBtn.addEventListener('click', () => {
+                this.showCreateModal();
+            });
+        }
     }
 
     async searchFics(query) {
@@ -563,16 +517,9 @@ class FanFikGOClient {
         };
         this.updateChaptersList();
     }
-
-    setupRecommendationRefresh() {
-        setInterval(() => {
-            this.loadFics();
-            this.loadTrendingTags();
-        }, 30 * 60 * 1000); // 30 минут
-    }
 }
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
-    window.fanFikGO = new FanFikGOClient();
+    window.fanFikClient = new FanFikClient();
 });
