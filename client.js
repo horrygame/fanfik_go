@@ -1,4 +1,4 @@
-class FicClient {
+class FanFikGOClient {
     constructor() {
         this.apiBase = window.location.origin;
         this.currentUser = null;
@@ -13,6 +13,8 @@ class FicClient {
         this.loadFics();
         this.setupEventListeners();
         await this.checkAuth();
+        this.loadStats();
+        this.loadTrendingTags();
         this.setupRecommendationRefresh();
     }
 
@@ -23,9 +25,13 @@ class FicClient {
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('adminBtn').addEventListener('click', () => window.open('/admin.html', '_blank'));
         
+        // Кнопка привязки Telegram
+        document.getElementById('telegramBindBtn').addEventListener('click', () => this.showTelegramModal());
+        
         // Закрытие модальных окон
         document.getElementById('closeCreateModal').addEventListener('click', () => this.hideCreateModal());
         document.getElementById('closeAuthModal').addEventListener('click', () => this.hideAuthModal());
+        document.getElementById('closeTelegramModal').addEventListener('click', () => this.hideTelegramModal());
         
         // Создание фанфика
         document.getElementById('createFicBtn').addEventListener('click', () => this.showCreateModal());
@@ -36,6 +42,9 @@ class FicClient {
         document.getElementById('authSubmitBtn').addEventListener('click', () => this.handleAuth());
         document.getElementById('authSwitch').addEventListener('click', () => this.switchAuthMode());
         
+        // Привязка Telegram
+        document.getElementById('bindTelegramBtn').addEventListener('click', () => this.bindTelegram());
+        
         // Поиск
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchFics(e.target.value));
         
@@ -44,6 +53,7 @@ class FicClient {
             if (e.target.classList.contains('modal')) {
                 this.hideCreateModal();
                 this.hideAuthModal();
+                this.hideTelegramModal();
             }
         });
     }
@@ -62,7 +72,7 @@ class FicClient {
                     
                     // Проверяем, привязан ли Telegram
                     if (!user.hasTelegram) {
-                        this.showTelegramNotice();
+                        document.getElementById('telegramBindBtn').style.display = 'block';
                     }
                 } else {
                     localStorage.removeItem('token');
@@ -82,7 +92,7 @@ class FicClient {
         const isLogin = document.getElementById('authTitle').textContent.includes('Вход');
         
         if (!username || !password) {
-            alert('Заполните никнейм и пароль');
+            alert('Заполните позывной и код доступа');
             return;
         }
         
@@ -111,16 +121,55 @@ class FicClient {
                     this.hideAuthModal();
                     
                     if (!data.user.hasTelegram) {
-                        this.showTelegramNotice();
+                        document.getElementById('telegramBindBtn').style.display = 'block';
                     }
                     
-                    alert(isLogin ? 'Вход выполнен!' : 'Регистрация успешна!');
+                    alert(isLogin ? 'Добро пожаловать на борт!' : 'Регистрация успешна! Добро пожаловать!');
                 }
             } else {
                 alert(data.error || 'Ошибка авторизации');
             }
         } catch (error) {
             console.error('Auth error:', error);
+            alert('Ошибка соединения с сервером');
+        }
+    }
+
+    async bindTelegram() {
+        const chatId = document.getElementById('telegramChatId').value.trim();
+        
+        if (!chatId) {
+            alert('Введите Chat ID');
+            return;
+        }
+        
+        if (!/^\d+$/.test(chatId)) {
+            alert('Chat ID должен содержать только цифры');
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${this.apiBase}/api/bind-telegram`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ telegramId: chatId })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Telegram успешно привязан! Теперь вы можете использовать двухфакторную аутентификацию.');
+                document.getElementById('telegramBindBtn').style.display = 'none';
+                this.hideTelegramModal();
+            } else {
+                alert(data.error || 'Ошибка при привязке Telegram');
+            }
+        } catch (error) {
+            console.error('Bind Telegram error:', error);
             alert('Ошибка соединения с сервером');
         }
     }
@@ -134,18 +183,15 @@ class FicClient {
         if (this.currentUser.username === 'horrygame') {
             document.getElementById('adminBtn').style.display = 'block';
         }
-        
-        document.getElementById('welcomeMessage').style.display = 'none';
     }
 
-    showTelegramNotice() {
-        const notice = document.getElementById('telegramNotice');
-        notice.style.display = 'flex';
-        
-        // Скрыть через 10 секунд
-        setTimeout(() => {
-            notice.style.display = 'none';
-        }, 10000);
+    showTelegramModal() {
+        document.getElementById('telegramModal').style.display = 'block';
+        document.getElementById('telegramChatId').value = '';
+    }
+
+    hideTelegramModal() {
+        document.getElementById('telegramModal').style.display = 'none';
     }
 
     async logout() {
@@ -155,10 +201,10 @@ class FicClient {
         document.getElementById('registerBtn').style.display = 'block';
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('adminBtn').style.display = 'none';
-        document.getElementById('telegramNotice').style.display = 'none';
+        document.getElementById('telegramBindBtn').style.display = 'none';
         document.getElementById('createFicBtn').style.display = 'none';
-        document.getElementById('welcomeMessage').style.display = 'block';
         this.loadFics();
+        this.loadStats();
     }
 
     showAuthModal(mode) {
@@ -169,14 +215,14 @@ class FicClient {
         const telegramHelp = document.getElementById('telegramHelp');
         
         if (mode === 'login') {
-            title.innerHTML = '<i class="fas fa-key"></i> Вход';
-            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
-            switchText.textContent = 'Нет аккаунта? Зарегистрируйтесь';
+            title.innerHTML = '<i class="fas fa-user-astronaut"></i> Вход в систему';
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти на борт';
+            switchText.textContent = 'Новый на борту? Пройдите регистрацию';
             telegramHelp.style.display = 'block';
         } else {
-            title.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация';
+            title.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация экипажа';
             submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Зарегистрироваться';
-            switchText.textContent = 'Уже есть аккаунт? Войдите';
+            switchText.textContent = 'Уже в экипаже? Войдите на борт';
             telegramHelp.style.display = 'none';
         }
         
@@ -209,7 +255,7 @@ class FicClient {
 
     showCreateModal() {
         if (!this.currentUser) {
-            alert('Для создания фанфика необходимо авторизоваться');
+            alert('Для создания фанфика необходимо войти на борт');
             return;
         }
         
@@ -231,7 +277,7 @@ class FicClient {
         const content = document.getElementById('ficContent').value;
         
         if (!title || !content) {
-            alert('Заполните название и текст главы');
+            alert('Заполните название и текст записи');
             return;
         }
         
@@ -262,8 +308,15 @@ class FicClient {
             const div = document.createElement('div');
             div.className = `chapter-item ${index === this.currentFic.currentChapter ? 'active' : ''}`;
             div.innerHTML = `
-                <div class="chapter-number">Глава ${index + 1}</div>
-                <div class="chapter-title">${chapter.title}</div>
+                <div style="font-size: 0.9rem; color: #8b4513; margin-bottom: 0.3rem;">
+                    Запись ${index + 1}
+                </div>
+                <div style="font-weight: 600; font-size: 1rem;">
+                    ${chapter.title}
+                </div>
+                <div style="font-size: 0.85rem; margin-top: 0.5rem; color: #666;">
+                    ${chapter.content.substring(0, 50)}...
+                </div>
             `;
             div.addEventListener('click', () => this.loadChapter(index));
             list.appendChild(div);
@@ -280,7 +333,7 @@ class FicClient {
 
     async submitFic() {
         if (!this.currentFic.chapters.length) {
-            alert('Добавьте хотя бы одну главу');
+            alert('Добавьте хотя бы одну запись');
             return;
         }
         
@@ -315,12 +368,13 @@ class FicClient {
             });
             
             if (response.ok) {
-                alert('Фанфик отправлен на рассмотрение!');
+                alert('Фанфик запущен на проверку! Ожидайте одобрения модерации.');
                 this.hideCreateModal();
                 this.loadFics();
+                this.loadStats();
             } else {
                 const error = await response.json();
-                alert(error.error || 'Ошибка при отправке');
+                alert(error.error || 'Ошибка при запуске');
             }
         } catch (error) {
             console.error('Submit error:', error);
@@ -337,6 +391,46 @@ class FicClient {
             console.error('Load fics error:', error);
             this.showEmptyState();
         }
+    }
+
+    async loadStats() {
+        try {
+            const response = await fetch(`${this.apiBase}/api/stats`);
+            const stats = await response.json();
+            
+            document.getElementById('totalFicsCount').textContent = stats.totalFics || '0';
+            document.getElementById('totalAuthorsCount').textContent = stats.totalAuthors || '0';
+            document.getElementById('totalChaptersCount').textContent = stats.totalChapters || '0';
+            document.getElementById('onlineUsersCount').textContent = stats.onlineUsers || Math.floor(Math.random() * 50) + 10;
+        } catch (error) {
+            console.error('Load stats error:', error);
+        }
+    }
+
+    async loadTrendingTags() {
+        try {
+            const response = await fetch(`${this.apiBase}/api/trending-tags`);
+            const tags = await response.json();
+            this.displayTrendingTags(tags);
+        } catch (error) {
+            console.error('Load trending tags error:', error);
+        }
+    }
+
+    displayTrendingTags(tags) {
+        const container = document.getElementById('trendingTags');
+        container.innerHTML = '';
+        
+        tags.forEach(tag => {
+            const tagElement = document.createElement('div');
+            tagElement.className = 'trending-tag';
+            tagElement.textContent = `#${tag}`;
+            tagElement.addEventListener('click', () => {
+                document.getElementById('searchInput').value = tag;
+                this.searchFics(tag);
+            });
+            container.appendChild(tagElement);
+        });
     }
 
     displayFics(fics) {
@@ -369,40 +463,69 @@ class FicClient {
                 'new': 'mark-new'
             };
             const markTexts = {
-                'liked': '👍 Понравилось',
-                'moderator': '👑 От модератора',
-                'featured': '⭐ Избранное',
-                'new': '🆕 Новинка'
+                'liked': '🔥 РЕКОМЕНДАЦИЯ',
+                'moderator': '👑 АВТОР МОДЕРАЦИИ',
+                'featured': '⭐ ИЗБРАННОЕ',
+                'new': '🆕 НОВИНКА'
             };
             markBadge = `<span class="mark-badge ${markClasses[fic.mark]}">${markTexts[fic.mark]}</span>`;
         }
         
+        const genreBadges = fic.genre.map(g => 
+            `<span class="fic-genre">${g}</span>`
+        ).join('');
+        
         card.innerHTML = `
             <h3 class="fic-title">${fic.title} ${markBadge}</h3>
             <p class="fic-author">
-                <i class="fas fa-user-edit"></i> ${fic.author}
+                <i class="fas fa-user-astronaut"></i> ${fic.author}
                 <span class="fic-age">${fic.age}</span>
             </p>
-            <div>
-                ${fic.genre.map(g => `<span class="fic-genre">${g}</span>`).join('')}
+            <div style="margin-bottom: 1.5rem;">
+                ${genreBadges}
             </div>
             <div class="fic-preview">
-                ${fic.chapters[0]?.content.substring(0, 200)}...
+                <strong>Первая запись:</strong><br>
+                ${fic.chapters[0]?.content.substring(0, 250)}...
+            </div>
+            <div style="margin-top: 1.5rem; font-size: 0.9rem; color: #888;">
+                <i class="fas fa-calendar"></i> Запущено: ${new Date(fic.createdAt).toLocaleDateString('ru-RU')}
             </div>
         `;
         
+        card.addEventListener('click', () => {
+            this.viewFic(fic.id);
+        });
+        
         return card;
+    }
+
+    async viewFic(ficId) {
+        try {
+            const response = await fetch(`${this.apiBase}/api/fic/${ficId}`);
+            if (response.ok) {
+                const fic = await response.json();
+                this.showFicViewer(fic);
+            }
+        } catch (error) {
+            console.error('View fic error:', error);
+        }
+    }
+
+    showFicViewer(fic) {
+        // Можно добавить модальное окно для просмотра фанфика
+        alert(`Открытие фанфика "${fic.title}"\n\nВ будущем здесь будет полноценный просмотрщик с главами.`);
     }
 
     showEmptyState() {
         const container = document.getElementById('ficsContainer');
         container.innerHTML = `
             <div class="empty-state">
-                <i class="fas fa-book"></i>
-                <h3>Здесь пока пусто</h3>
-                <p>Будьте первым, кто напишет фанфик!</p>
-                <button id="writeFirstBtn" style="margin-top: 1.5rem;">
-                    <i class="fas fa-feather-alt"></i> Написать первую историю
+                <i class="fas fa-rocket"></i>
+                <h3>Вселенная пустует</h3>
+                <p>Будьте первым, кто запустит фанфик в космос!</p>
+                <button id="writeFirstBtn" style="margin-top: 2rem;">
+                    <i class="fas fa-paper-plane"></i> Стать первопроходцем
                 </button>
             </div>
         `;
@@ -444,11 +567,12 @@ class FicClient {
     setupRecommendationRefresh() {
         setInterval(() => {
             this.loadFics();
+            this.loadTrendingTags();
         }, 30 * 60 * 1000); // 30 минут
     }
 }
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
-    window.ficClient = new FicClient();
+    window.fanFikGO = new FanFikGOClient();
 });
