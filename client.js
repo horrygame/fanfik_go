@@ -2,15 +2,17 @@ class FicClient {
     constructor() {
         this.apiBase = window.location.origin;
         this.currentUser = null;
-        this.currentFic = null;
-        this.chapters = [];
+        this.currentFic = {
+            chapters: [],
+            currentChapter: 0
+        };
         this.init();
     }
 
     async init() {
         this.loadFics();
         this.setupEventListeners();
-        this.checkAuth();
+        await this.checkAuth();
         this.setupRecommendationRefresh();
     }
 
@@ -57,10 +59,18 @@ class FicClient {
                     const user = await response.json();
                     this.currentUser = user;
                     this.updateUIAfterLogin();
+                    
+                    // Проверяем, привязан ли Telegram
+                    if (!user.hasTelegram) {
+                        this.showTelegramNotice();
+                    }
+                } else {
+                    localStorage.removeItem('token');
                 }
             }
         } catch (error) {
             console.error('Auth check failed:', error);
+            localStorage.removeItem('token');
         }
     }
 
@@ -69,7 +79,12 @@ class FicClient {
         const password = document.getElementById('authPassword').value;
         const telegramId = document.getElementById('authTelegram').value;
         
-        const isLogin = document.getElementById('authTitle').textContent === 'Вход';
+        const isLogin = document.getElementById('authTitle').textContent.includes('Вход');
+        
+        if (!username || !password) {
+            alert('Заполните никнейм и пароль');
+            return;
+        }
         
         try {
             const endpoint = isLogin ? '/api/login' : '/api/register';
@@ -81,9 +96,9 @@ class FicClient {
                 body: JSON.stringify(payload)
             });
             
+            const data = await response.json();
+            
             if (response.ok) {
-                const data = await response.json();
-                
                 if (data.require2FA) {
                     this.showTelegramField();
                     return;
@@ -94,14 +109,19 @@ class FicClient {
                     this.currentUser = data.user;
                     this.updateUIAfterLogin();
                     this.hideAuthModal();
+                    
+                    if (!data.user.hasTelegram) {
+                        this.showTelegramNotice();
+                    }
+                    
                     alert(isLogin ? 'Вход выполнен!' : 'Регистрация успешна!');
                 }
             } else {
-                alert('Ошибка авторизации');
+                alert(data.error || 'Ошибка авторизации');
             }
         } catch (error) {
             console.error('Auth error:', error);
-            alert('Ошибка соединения');
+            alert('Ошибка соединения с сервером');
         }
     }
 
@@ -109,10 +129,23 @@ class FicClient {
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'block';
+        document.getElementById('createFicBtn').style.display = 'block';
         
         if (this.currentUser.username === 'horrygame') {
             document.getElementById('adminBtn').style.display = 'block';
         }
+        
+        document.getElementById('welcomeMessage').style.display = 'none';
+    }
+
+    showTelegramNotice() {
+        const notice = document.getElementById('telegramNotice');
+        notice.style.display = 'flex';
+        
+        // Скрыть через 10 секунд
+        setTimeout(() => {
+            notice.style.display = 'none';
+        }, 10000);
     }
 
     async logout() {
@@ -122,7 +155,10 @@ class FicClient {
         document.getElementById('registerBtn').style.display = 'block';
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('adminBtn').style.display = 'none';
+        document.getElementById('telegramNotice').style.display = 'none';
         document.getElementById('createFicBtn').style.display = 'none';
+        document.getElementById('welcomeMessage').style.display = 'block';
+        this.loadFics();
     }
 
     showAuthModal(mode) {
@@ -130,15 +166,18 @@ class FicClient {
         const title = document.getElementById('authTitle');
         const submitBtn = document.getElementById('authSubmitBtn');
         const switchText = document.getElementById('authSwitch');
+        const telegramHelp = document.getElementById('telegramHelp');
         
         if (mode === 'login') {
-            title.textContent = 'Вход';
-            submitBtn.textContent = 'Войти';
+            title.innerHTML = '<i class="fas fa-key"></i> Вход';
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
             switchText.textContent = 'Нет аккаунта? Зарегистрируйтесь';
+            telegramHelp.style.display = 'block';
         } else {
-            title.textContent = 'Регистрация';
-            submitBtn.textContent = 'Зарегистрироваться';
+            title.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация';
+            submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Зарегистрироваться';
             switchText.textContent = 'Уже есть аккаунт? Войдите';
+            telegramHelp.style.display = 'none';
         }
         
         modal.style.display = 'block';
@@ -146,12 +185,13 @@ class FicClient {
 
     showTelegramField() {
         document.getElementById('authTelegram').style.display = 'block';
-        document.getElementById('authSubmitBtn').textContent = 'Подтвердить 2FA';
+        document.getElementById('telegramHelp').style.display = 'block';
+        document.getElementById('authSubmitBtn').innerHTML = '<i class="fas fa-shield-alt"></i> Подтвердить 2FA';
     }
 
     switchAuthMode() {
         const title = document.getElementById('authTitle');
-        if (title.textContent === 'Вход') {
+        if (title.textContent.includes('Вход')) {
             this.showAuthModal('register');
         } else {
             this.showAuthModal('login');
@@ -161,6 +201,7 @@ class FicClient {
     hideAuthModal() {
         document.getElementById('authModal').style.display = 'none';
         document.getElementById('authTelegram').style.display = 'none';
+        document.getElementById('telegramHelp').style.display = 'none';
         document.getElementById('authTelegram').value = '';
         document.getElementById('authUsername').value = '';
         document.getElementById('authPassword').value = '';
@@ -194,11 +235,23 @@ class FicClient {
             return;
         }
         
-        this.currentFic.chapters.push({ title, content });
+        const chapterIndex = this.currentFic.currentChapter;
+        
+        if (this.currentFic.chapters[chapterIndex]) {
+            // Обновляем существующую главу
+            this.currentFic.chapters[chapterIndex] = { title, content };
+        } else {
+            // Добавляем новую главу
+            this.currentFic.chapters.push({ title, content });
+        }
+        
         this.updateChaptersList();
         
         document.getElementById('chapterTitle').value = '';
         document.getElementById('ficContent').value = '';
+        
+        // Сбрасываем выбор главы
+        this.currentFic.currentChapter = this.currentFic.chapters.length;
     }
 
     updateChaptersList() {
@@ -207,8 +260,11 @@ class FicClient {
         
         this.currentFic.chapters.forEach((chapter, index) => {
             const div = document.createElement('div');
-            div.className = 'chapter-item';
-            div.textContent = `Глава ${index + 1}: ${chapter.title}`;
+            div.className = `chapter-item ${index === this.currentFic.currentChapter ? 'active' : ''}`;
+            div.innerHTML = `
+                <div class="chapter-number">Глава ${index + 1}</div>
+                <div class="chapter-title">${chapter.title}</div>
+            `;
             div.addEventListener('click', () => this.loadChapter(index));
             list.appendChild(div);
         });
@@ -219,6 +275,7 @@ class FicClient {
         document.getElementById('chapterTitle').value = chapter.title;
         document.getElementById('ficContent').value = chapter.content;
         this.currentFic.currentChapter = index;
+        this.updateChaptersList();
     }
 
     async submitFic() {
@@ -227,11 +284,21 @@ class FicClient {
             return;
         }
         
+        const title = document.getElementById('ficTitle').value;
+        const author = document.getElementById('ficAuthor').value;
+        const genre = document.getElementById('ficGenre').value;
+        const age = document.getElementById('ficAge').value;
+        
+        if (!title || !author || !genre) {
+            alert('Заполните все обязательные поля');
+            return;
+        }
+        
         const fic = {
-            title: document.getElementById('ficTitle').value,
-            author: document.getElementById('ficAuthor').value,
-            genre: document.getElementById('ficGenre').value,
-            age: document.getElementById('ficAge').value,
+            title,
+            author,
+            genre: genre.split(',').map(g => g.trim()),
+            age,
             chapters: this.currentFic.chapters,
             status: 'pending'
         };
@@ -251,9 +318,13 @@ class FicClient {
                 alert('Фанфик отправлен на рассмотрение!');
                 this.hideCreateModal();
                 this.loadFics();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Ошибка при отправке');
             }
         } catch (error) {
             console.error('Submit error:', error);
+            alert('Ошибка соединения с сервером');
         }
     }
 
@@ -264,6 +335,7 @@ class FicClient {
             this.displayFics(fics);
         } catch (error) {
             console.error('Load fics error:', error);
+            this.showEmptyState();
         }
     }
 
@@ -271,23 +343,81 @@ class FicClient {
         const container = document.getElementById('ficsContainer');
         container.innerHTML = '';
         
+        if (!fics || fics.length === 0) {
+            this.showEmptyState();
+            return;
+        }
+        
         fics.forEach(fic => {
             if (fic.status === 'approved') {
-                const card = document.createElement('div');
-                card.className = 'fic-card';
-                card.innerHTML = `
-                    <h3 class="fic-title">${fic.title}</h3>
-                    <p class="fic-author">Автор: ${fic.author}</p>
-                    <span class="fic-genre">${fic.genre}</span>
-                    <p>Возраст: ${fic.age}</p>
-                    <p>${fic.chapters[0]?.content.substring(0, 150)}...</p>
-                `;
+                const card = this.createFicCard(fic);
                 container.appendChild(card);
             }
         });
     }
 
+    createFicCard(fic) {
+        const card = document.createElement('div');
+        card.className = 'fic-card';
+        
+        let markBadge = '';
+        if (fic.mark) {
+            const markClasses = {
+                'liked': 'mark-liked',
+                'moderator': 'mark-moderator',
+                'featured': 'mark-featured',
+                'new': 'mark-new'
+            };
+            const markTexts = {
+                'liked': '👍 Понравилось',
+                'moderator': '👑 От модератора',
+                'featured': '⭐ Избранное',
+                'new': '🆕 Новинка'
+            };
+            markBadge = `<span class="mark-badge ${markClasses[fic.mark]}">${markTexts[fic.mark]}</span>`;
+        }
+        
+        card.innerHTML = `
+            <h3 class="fic-title">${fic.title} ${markBadge}</h3>
+            <p class="fic-author">
+                <i class="fas fa-user-edit"></i> ${fic.author}
+                <span class="fic-age">${fic.age}</span>
+            </p>
+            <div>
+                ${fic.genre.map(g => `<span class="fic-genre">${g}</span>`).join('')}
+            </div>
+            <div class="fic-preview">
+                ${fic.chapters[0]?.content.substring(0, 200)}...
+            </div>
+        `;
+        
+        return card;
+    }
+
+    showEmptyState() {
+        const container = document.getElementById('ficsContainer');
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <h3>Здесь пока пусто</h3>
+                <p>Будьте первым, кто напишет фанфик!</p>
+                <button id="writeFirstBtn" style="margin-top: 1.5rem;">
+                    <i class="fas fa-feather-alt"></i> Написать первую историю
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('writeFirstBtn').addEventListener('click', () => {
+            this.showCreateModal();
+        });
+    }
+
     async searchFics(query) {
+        if (!query.trim()) {
+            this.loadFics();
+            return;
+        }
+        
         try {
             const response = await fetch(`${this.apiBase}/api/search?q=${encodeURIComponent(query)}`);
             const fics = await response.json();
@@ -304,7 +434,11 @@ class FicClient {
         document.getElementById('ficAge').value = '0+';
         document.getElementById('chapterTitle').value = '';
         document.getElementById('ficContent').value = '';
-        this.currentFic = null;
+        this.currentFic = {
+            chapters: [],
+            currentChapter: 0
+        };
+        this.updateChaptersList();
     }
 
     setupRecommendationRefresh() {
