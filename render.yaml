@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: fanfik-go
+    name: fanfik
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
