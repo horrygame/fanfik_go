@@ -106,7 +106,42 @@
             background: linear-gradient(to bottom, #757575, #424242);
         }
         
-        .pending-fics {
+        .btn-delete {
+            background: linear-gradient(to bottom, #f44336, #c62828);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(210, 105, 30, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(210, 105, 30, 0.2);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background: linear-gradient(to bottom, #d2691e, #b5651d);
+            color: white;
+            border-color: #8b4513;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .pending-fics, .published-fics {
             display: grid;
             gap: 25px;
             margin-top: 20px;
@@ -207,7 +242,7 @@
             background: linear-gradient(to bottom, #f44336, #c62828);
         }
         
-        .btn-delete {
+        .btn-delete-permanent {
             background: linear-gradient(to bottom, #757575, #424242);
         }
         
@@ -285,6 +320,10 @@
             select, button {
                 width: 100%;
             }
+            
+            .tabs {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -327,8 +366,20 @@
         
         <div class="json-preview" id="jsonPreview"></div>
         
-        <h2><i class="fas fa-clock"></i> Фанфики на рассмотрении</h2>
-        <div id="pendingFicsList" class="pending-fics"></div>
+        <div class="tabs">
+            <div class="tab active" data-tab="pending">На рассмотрении</div>
+            <div class="tab" data-tab="published">Опубликованные</div>
+        </div>
+        
+        <div class="tab-content active" id="pendingTab">
+            <h2><i class="fas fa-clock"></i> Фанфики на рассмотрении</h2>
+            <div id="pendingFicsList" class="pending-fics"></div>
+        </div>
+        
+        <div class="tab-content" id="publishedTab">
+            <h2><i class="fas fa-check-circle"></i> Опубликованные фанфики</h2>
+            <div id="publishedFicsList" class="published-fics"></div>
+        </div>
     </div>
 
     <script>
@@ -341,11 +392,33 @@
             async init() {
                 await this.checkAdminAccess();
                 this.loadPendingFics();
+                this.loadPublishedFics();
                 this.loadStats();
+                this.setupTabs();
                 setInterval(() => {
                     this.loadPendingFics();
+                    this.loadPublishedFics();
                     this.loadStats();
                 }, 30000);
+            }
+            
+            setupTabs() {
+                const tabs = document.querySelectorAll('.tab');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabId = tab.dataset.tab;
+                        
+                        // Обновляем активную вкладку
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Показываем соответствующий контент
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        document.getElementById(`${tabId}Tab`).classList.add('active');
+                    });
+                });
             }
             
             async checkAdminAccess() {
@@ -381,7 +454,18 @@
                     }
                 } catch (error) {
                     console.error('Ошибка загрузки фанфиков:', error);
-                    this.showEmptyState();
+                    this.showEmptyState('pendingFicsList', 'Нет фанфиков на рассмотрении');
+                }
+            }
+            
+            async loadPublishedFics() {
+                try {
+                    const response = await fetch(`${this.apiBase}/api/fics`);
+                    const fics = await response.json();
+                    this.displayPublishedFics(fics);
+                } catch (error) {
+                    console.error('Ошибка загрузки опубликованных фанфиков:', error);
+                    this.showEmptyState('publishedFicsList', 'Нет опубликованных фанфиков');
                 }
             }
             
@@ -447,19 +531,35 @@
                 const container = document.getElementById('pendingFicsList');
                 
                 if (!fics || fics.length === 0) {
-                    this.showEmptyState();
+                    this.showEmptyState('pendingFicsList', 'Нет фанфиков на рассмотрении');
                     return;
                 }
                 
                 container.innerHTML = '';
                 
                 fics.forEach(fic => {
-                    const ficElement = this.createFicElement(fic);
+                    const ficElement = this.createFicElement(fic, true);
                     container.appendChild(ficElement);
                 });
             }
             
-            createFicElement(fic) {
+            displayPublishedFics(fics) {
+                const container = document.getElementById('publishedFicsList');
+                
+                if (!fics || fics.length === 0) {
+                    this.showEmptyState('publishedFicsList', 'Нет опубликованных фанфиков');
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                fics.forEach(fic => {
+                    const ficElement = this.createFicElement(fic, false);
+                    container.appendChild(ficElement);
+                });
+            }
+            
+            createFicElement(fic, isPending = true) {
                 const ficElement = document.createElement('div');
                 ficElement.className = 'fic-item';
                 
@@ -467,33 +567,9 @@
                     `<span class="fic-tag">${g}</span>`
                 ).join('');
                 
-                ficElement.innerHTML = `
-                    <div class="fic-header">
-                        <h3 class="fic-title">${fic.title}</h3>
-                        <div class="fic-meta">
-                            <span>Автор: ${fic.author}</span>
-                            <span>Отправлен: ${new Date(fic.createdAt).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="fic-tags">
-                        ${genreTags}
-                        <span class="fic-tag">${fic.age}</span>
-                    </div>
-                    
-                    <div class="chapter-content">
-                        <strong>Первая глава:</strong><br>
-                        ${fic.chapters[0]?.content.substring(0, 300)}...
-                    </div>
-                    
-                    <div class="controls">
-                        <select class="age-select" data-id="${fic.id}">
-                            <option value="0+" ${fic.age === '0+' ? 'selected' : ''}>0+</option>
-                            <option value="12+" ${fic.age === '12+' ? 'selected' : ''}>12+</option>
-                            <option value="16+" ${fic.age === '16+' ? 'selected' : ''}>16+</option>
-                            <option value="18+" ${fic.age === '18+' ? 'selected' : ''}>18+</option>
-                        </select>
-                        
+                let markButtons = '';
+                if (!isPending) {
+                    markButtons = `
                         <div class="mark-buttons">
                             <button class="mark-btn ${fic.mark === 'liked' ? 'active' : ''}" 
                                     onclick="adminPanel.setMark('${fic.id}', 'liked')">
@@ -512,6 +588,19 @@
                                 🆕 Новинка
                             </button>
                         </div>
+                    `;
+                }
+                
+                const controls = isPending ? `
+                    <div class="controls">
+                        <select class="age-select" data-id="${fic.id}">
+                            <option value="0+" ${fic.age === '0+' ? 'selected' : ''}>0+</option>
+                            <option value="12+" ${fic.age === '12+' ? 'selected' : ''}>12+</option>
+                            <option value="16+" ${fic.age === '16+' ? 'selected' : ''}>16+</option>
+                            <option value="18+" ${fic.age === '18+' ? 'selected' : ''}>18+</option>
+                        </select>
+                        
+                        ${markButtons}
                         
                         <button class="btn-approve" onclick="adminPanel.approveFic('${fic.id}')">
                             <i class="fas fa-check"></i> Одобрить
@@ -519,10 +608,49 @@
                         <button class="btn-reject" onclick="adminPanel.rejectFic('${fic.id}')">
                             <i class="fas fa-times"></i> Отклонить
                         </button>
-                        <button class="btn-delete" onclick="adminPanel.deleteFic('${fic.id}')">
+                        <button class="btn-delete-permanent" onclick="adminPanel.deleteFicPermanent('${fic.id}', true)">
                             <i class="fas fa-trash"></i> Удалить
                         </button>
                     </div>
+                ` : `
+                    <div class="controls">
+                        <select class="age-select" data-id="${fic.id}">
+                            <option value="0+" ${fic.age === '0+' ? 'selected' : ''}>0+</option>
+                            <option value="12+" ${fic.age === '12+' ? 'selected' : ''}>12+</option>
+                            <option value="16+" ${fic.age === '16+' ? 'selected' : ''}>16+</option>
+                            <option value="18+" ${fic.age === '18+' ? 'selected' : ''}>18+</option>
+                        </select>
+                        
+                        ${markButtons}
+                        
+                        <button class="btn-delete" onclick="adminPanel.deleteFicPermanent('${fic.id}', false)">
+                            <i class="fas fa-trash-alt"></i> Удалить фанфик
+                        </button>
+                    </div>
+                `;
+                
+                ficElement.innerHTML = `
+                    <div class="fic-header">
+                        <h3 class="fic-title">${fic.title}</h3>
+                        <div class="fic-meta">
+                            <span>Автор: ${fic.author}</span>
+                            <span>Отправлен: ${new Date(fic.createdAt).toLocaleDateString()}</span>
+                            <span>Глав: ${fic.chapters?.length || 1}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="fic-tags">
+                        ${genreTags}
+                        <span class="fic-tag">${fic.age}</span>
+                        ${isPending ? '<span class="fic-tag" style="background: rgba(255, 193, 7, 0.2);">На рассмотрении</span>' : ''}
+                    </div>
+                    
+                    <div class="chapter-content">
+                        <strong>Первая глава:</strong><br>
+                        ${fic.chapters[0]?.content.substring(0, 300)}...
+                    </div>
+                    
+                    ${controls}
                 `;
                 
                 const select = ficElement.querySelector('.age-select');
@@ -533,13 +661,12 @@
                 return ficElement;
             }
             
-            showEmptyState() {
-                const container = document.getElementById('pendingFicsList');
+            showEmptyState(containerId, message) {
+                const container = document.getElementById(containerId);
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-check-circle"></i>
-                        <h3>Нет фанфиков на рассмотрении</h3>
-                        <p>Все работы проверены!</p>
+                        <h3>${message}</h3>
                     </div>
                 `;
             }
@@ -613,9 +740,34 @@
                 }
             }
             
-            async deleteFic(ficId) {
-                if (confirm('Удалить фанфик навсегда?')) {
-                    await this.updateFicStatus(ficId, 'deleted');
+            async deleteFicPermanent(ficId, isPending) {
+                const message = isPending 
+                    ? 'Удалить этот фанфик навсегда? (автор не будет уведомлен)'
+                    : 'Удалить этот опубликованный фанфик? Автор получит уведомление.';
+                
+                if (confirm(message)) {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch(`${this.apiBase}/api/delete-fic/${ficId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            alert('Фанфик удален!');
+                            this.loadPendingFics();
+                            this.loadPublishedFics();
+                            this.loadStats();
+                        } else {
+                            const data = await response.json();
+                            alert(data.error || 'Ошибка при удалении');
+                        }
+                    } catch (error) {
+                        console.error('Ошибка удаления:', error);
+                        alert('Ошибка при удалении фанфика');
+                    }
                 }
             }
             
@@ -633,6 +785,7 @@
                     
                     if (response.ok) {
                         this.loadPendingFics();
+                        this.loadPublishedFics();
                         this.loadStats();
                     }
                 } catch (error) {
@@ -654,7 +807,7 @@
                     });
                     
                     if (response.ok) {
-                        this.loadPendingFics();
+                        this.loadPublishedFics();
                     }
                 } catch (error) {
                     console.error('Ошибка установки метки:', error);
