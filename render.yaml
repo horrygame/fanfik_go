@@ -1,15 +1,28 @@
 services:
   - type: web
-    name: fanfik
+    name: fanfiction-site
     env: node
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: npm start
     envVars:
-      - key: NODE_VERSION
-        value: 20.11.0
-      - key: JWT_SECRET
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
         generateValue: true
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-    healthCheckPath: /
+      - key: APP_URL
+        value: https://fanfiction-site.onrender.com
+    healthCheckPath: /api/user
     autoDeploy: true
+
+  - type: cron
+    name: keep-alive-job
+    schedule: "*/5 * * * *"
+    env: node
+    buildCommand: npm install
+    startCommand: npm run keep-alive:once
+    envVars:
+      - key: APP_URL
+        fromService:
+          type: web
+          name: fanfiction-site
+          envVarKey: APP_URL
