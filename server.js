@@ -1,14 +1,15 @@
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
-const TelegramBot = require('node-telegram-bot-api');
 const { v4: uuidv4 } = require('uuid');
 const { JSONFile, Low } = require('lowdb');
-const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Важно для Render: всегда используйте порт из переменной окружения
+const port = process.env.PORT || 3000;
 
 // Настройка базы данных
 const adapter = new JSONFile('ff.json');
@@ -30,12 +31,12 @@ initializeDB();
 
 // Настройка сессий
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fanfic-secret-key-change-in-production',
+    secret: process.env.SESSION_SECRET || 'dev-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 часа
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -43,19 +44,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// Конфигурация Telegram бота
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN';
-const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
+// Middleware для CORS (важно для Render)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
 
 // Хранилище для 2FA кодов
 const twoFACodes = new Map();
 
-// Генерация 6-значного кода
 function generate2FACode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Проверка аутентификации
 function requireAuth(req, res, next) {
     if (!req.session.user) {
         return res.status(401).json({ error: 'Требуется авторизация' });
@@ -63,7 +65,6 @@ function requireAuth(req, res, next) {
     next();
 }
 
-// Проверка админских прав
 function requireAdmin(req, res, next) {
     if (!req.session.user || req.session.user.username !== 'horrygame') {
         return res.status(403).json({ error: 'Доступ запрещен' });
@@ -71,13 +72,17 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-// Middleware для логирования запросов
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
-    next();
+// === КРИТИЧЕСКИ ВАЖНО: Health Check для Render ===
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        port: port,
+        environment: process.env.NODE_ENV || 'development'
+    });
 });
 
-// API эндпоинты
+// === ОСНОВНЫЕ API ЭНДПОИНТЫ ===
 
 // Регистрация
 app.post('/api/register', async (req, res) => {
@@ -86,10 +91,6 @@ app.post('/api/register', async (req, res) => {
         
         if (!username || !password) {
             return res.status(400).json({ success: false, message: 'Заполните все поля' });
-        }
-        
-        if (password.length < 6) {
-            return res.status(400).json({ success: false, message: 'Пароль должен быть не менее 6 символов' });
         }
         
         await db.read();
@@ -111,7 +112,6 @@ app.post('/api/register', async (req, res) => {
         db.data.users.push(user);
         await db.write();
         
-        console.log(`Зарегистрирован новый пользователь: ${username}`);
         res.json({ success: true, message: 'Регистрация успешна' });
     } catch (error) {
         console.error('Ошибка регистрации:', error);
@@ -123,10 +123,6 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ success: false, message: 'Заполните все поля' });
-        }
         
         await db.read();
         const user = db.data.users.find(u => u.username === username);
@@ -140,17 +136,13 @@ app.post('/api/login', async (req, res) => {
             return res.json({ success: false, message: 'Неверный логин или пароль' });
         }
         
-        // Генерация кода 2FA
         const code = generate2FACode();
         twoFACodes.set(username, { code, timestamp: Date.now(), userId: user.id });
         
-        console.log(`Сгенерирован 2FA код для ${username}: ${code}`);
-        
-        // В демо-режиме возвращаем код напрямую
         res.json({ 
             success: true, 
             requires2FA: true, 
-            message: `Код 2FA отправлен в Telegram: ${code} (для демо)`,
+            message: `Код 2FA: ${code}`,
             username: username
         });
     } catch (error) {
@@ -164,32 +156,14 @@ app.post('/api/verify-2fa', async (req, res) => {
     try {
         const { username, code } = req.body;
         
-        if (!username || !code) {
-            return res.status(400).json({ success: false, message: 'Заполните все поля' });
-        }
-        
         const twoFA = twoFACodes.get(username);
         
-        if (!twoFA) {
-            return res.json({ success: false, message: 'Код не найден или истек' });
-        }
-        
-        if (twoFA.code !== code) {
+        if (!twoFA || twoFA.code !== code) {
             return res.json({ success: false, message: 'Неверный код' });
-        }
-        
-        // Проверка времени действия кода (10 минут)
-        if (Date.now() - twoFA.timestamp > 10 * 60 * 1000) {
-            twoFACodes.delete(username);
-            return res.json({ success: false, message: 'Код истек' });
         }
         
         await db.read();
         const user = db.data.users.find(u => u.username === username);
-        
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'Пользователь не найден' });
-        }
         
         req.session.user = {
             id: user.id,
@@ -198,7 +172,6 @@ app.post('/api/verify-2fa', async (req, res) => {
         };
         
         twoFACodes.delete(username);
-        console.log(`Успешная аутентификация: ${username}`);
         res.json({ success: true, user: req.session.user });
     } catch (error) {
         console.error('Ошибка верификации 2FA:', error);
@@ -213,9 +186,6 @@ app.get('/api/user', (req, res) => {
 
 // Выход
 app.post('/api/logout', (req, res) => {
-    if (req.session.user) {
-        console.log(`Выход пользователя: ${req.session.user.username}`);
-    }
     req.session.destroy();
     res.json({ success: true });
 });
@@ -254,14 +224,10 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// Отправка фанфика на рассмотрение
+// Отправка фанфика
 app.post('/api/submit-fanfic', requireAuth, async (req, res) => {
     try {
         const { title, genre, ageRating, author, chapters } = req.body;
-        
-        if (!title || !genre || !ageRating || !author || !chapters || !Array.isArray(chapters)) {
-            return res.status(400).json({ success: false, message: 'Заполните все поля' });
-        }
         
         await db.read();
         
@@ -271,26 +237,18 @@ app.post('/api/submit-fanfic', requireAuth, async (req, res) => {
             genre,
             ageRating,
             author,
-            chapters: chapters.map(chapter => ({
-                id: uuidv4(),
-                title: chapter.title || 'Без названия',
-                content: chapter.content || '',
-                createdAt: new Date().toISOString()
-            })),
+            chapters: chapters || [],
             submittedBy: req.session.user.username,
             submittedAt: new Date().toISOString(),
-            status: 'pending',
-            views: 0
+            status: 'pending'
         };
         
         db.data.pendingFanfics.push(fanfic);
         await db.write();
         
-        console.log(`Новый фанфик отправлен на модерацию: "${title}" от ${author}`);
         res.json({ 
             success: true, 
-            message: 'Фанфик отправлен на рассмотрение',
-            fanficId: fanfic.id 
+            message: 'Фанфик отправлен на рассмотрение'
         });
     } catch (error) {
         console.error('Ошибка отправки фанфика:', error);
@@ -298,9 +256,8 @@ app.post('/api/submit-fanfic', requireAuth, async (req, res) => {
     }
 });
 
-// Админские эндпоинты
+// === АДМИНСКИЕ ЭНДПОИНТЫ ===
 
-// Получение фанфиков на рассмотрении
 app.get('/api/admin/pending', requireAdmin, async (req, res) => {
     try {
         await db.read();
@@ -311,14 +268,9 @@ app.get('/api/admin/pending', requireAdmin, async (req, res) => {
     }
 });
 
-// Обновление статуса фанфика
 app.post('/api/admin/update-fanfic', requireAdmin, async (req, res) => {
     try {
         const { id, status, officialMark, ageRating } = req.body;
-        
-        if (!id || !status) {
-            return res.status(400).json({ success: false, message: 'Не указаны обязательные поля' });
-        }
         
         await db.read();
         const index = db.data.pendingFanfics.findIndex(f => f.id === id);
@@ -330,28 +282,22 @@ app.post('/api/admin/update-fanfic', requireAdmin, async (req, res) => {
         const fanfic = db.data.pendingFanfics[index];
         
         if (status === 'approved') {
-            fanfic.officialMark = officialMark || null;
-            fanfic.ageRating = ageRating || fanfic.ageRating;
+            fanfic.officialMark = officialMark;
+            fanfic.ageRating = ageRating;
             fanfic.publishedAt = new Date().toISOString();
-            fanfic.status = 'published';
             db.data.fanfics.push(fanfic);
-            
-            console.log(`Фанфик одобрен: "${fanfic.title}"`);
-        } else if (status === 'rejected') {
-            console.log(`Фанфик отклонен: "${fanfic.title}"`);
         }
         
         db.data.pendingFanfics.splice(index, 1);
         await db.write();
         
-        res.json({ success: true, message: `Фанфик ${status === 'approved' ? 'одобрен' : 'отклонен'}` });
+        res.json({ success: true });
     } catch (error) {
         console.error('Ошибка обновления фанфика:', error);
         res.status(500).json({ success: false, message: 'Ошибка сервера' });
     }
 });
 
-// Удаление фанфика
 app.delete('/api/admin/fanfic/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -363,24 +309,20 @@ app.delete('/api/admin/fanfic/:id', requireAdmin, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Фанфик не найден' });
         }
         
-        const deletedFanfic = db.data.fanfics[index];
         db.data.fanfics.splice(index, 1);
         await db.write();
         
-        console.log(`Фанфик удален: "${deletedFanfic.title}"`);
-        res.json({ success: true, message: 'Фанфик удален' });
+        res.json({ success: true });
     } catch (error) {
         console.error('Ошибка удаления фанфика:', error);
         res.status(500).json({ success: false, message: 'Ошибка сервера' });
     }
 });
 
-// Перемешивание рекомендаций
 app.post('/api/admin/shuffle-recommendations', requireAdmin, async (req, res) => {
     try {
         await db.read();
         
-        // Перемешиваем фанфики
         for (let i = db.data.fanfics.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [db.data.fanfics[i], db.data.fanfics[j]] = [db.data.fanfics[j], db.data.fanfics[i]];
@@ -389,36 +331,14 @@ app.post('/api/admin/shuffle-recommendations', requireAdmin, async (req, res) =>
         db.data.adminStats.lastRecommendationShuffle = Date.now();
         await db.write();
         
-        console.log('Рекомендации перемешаны вручную');
-        res.json({ success: true, message: 'Рекомендации перемешаны' });
+        res.json({ success: true });
     } catch (error) {
         console.error('Ошибка перемешивания рекомендаций:', error);
         res.status(500).json({ success: false, message: 'Ошибка сервера' });
     }
 });
 
-// Статистика для админа
-app.get('/api/admin/stats', requireAdmin, async (req, res) => {
-    try {
-        await db.read();
-        
-        const stats = {
-            totalUsers: db.data.users.length,
-            totalFanfics: db.data.fanfics.length,
-            pendingFanfics: db.data.pendingFanfics.length,
-            lastShuffle: db.data.adminStats.lastRecommendationShuffle
-                ? new Date(db.data.adminStats.lastRecommendationShuffle).toLocaleString('ru-RU')
-                : null
-        };
-        
-        res.json({ success: true, stats });
-    } catch (error) {
-        console.error('Ошибка получения статистики:', error);
-        res.status(500).json({ success: false, message: 'Ошибка сервера' });
-    }
-});
-
-// Маршруты для HTML страниц
+// === HTML СТРАНИЦЫ ===
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -427,50 +347,58 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Health check endpoint для Render
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        service: 'Fanfiction Site'
-    });
-});
-
-// Автоматическое перемешивание каждые 30 минут
-setInterval(async () => {
-    try {
-        await db.read();
-        
-        if (db.data.fanfics.length > 1) {
-            // Перемешиваем фанфики
-            for (let i = db.data.fanfics.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [db.data.fanfics[i], db.data.fanfics[j]] = [db.data.fanfics[j], db.data.fanfics[i]];
-            }
-            
-            db.data.adminStats.lastRecommendationShuffle = Date.now();
-            await db.write();
-            
-            console.log('Рекомендации перемешаны автоматически');
-        }
-    } catch (error) {
-        console.error('Ошибка автоматического перемешивания:', error);
-    }
-}, 30 * 60 * 1000); // 30 минут
-
-// Обработка 404
+// === ОБРАБОТКА ОШИБОК ===
 app.use((req, res) => {
     res.status(404).json({ error: 'Страница не найдена' });
 });
 
-// Обработка ошибок
 app.use((err, req, res, next) => {
-    console.error('Необработанная ошибка:', err);
+    console.error('Ошибка сервера:', err);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
-app.listen(PORT, () => {
-    console.log(`✅ Сервер запущен на порту ${PORT}`);
-    console.log(`🌐 Сайт доступен по адресу: http://localhost:${PORT}`);
-    console.log(`👑 Админский аккаунт: horrygame`);
+// === КРИТИЧЕСКИ ВАЖНО: Запуск сервера ===
+const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Сервер запущен на порту ${port}`);
+    console.log(`🌐 Локальный URL: http://localhost:${port}`);
+    console.log(`📡 Внешний URL: http://0.0.0.0:${port}`);
+    console.log(`🔧 Режим: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Проверка подключения
+    console.log(`🔍 Health check доступен по: http://0.0.0.0:${port}/health`);
+    
+    // Автоматическое перемешивание
+    setInterval(async () => {
+        try {
+            await db.read();
+            if (db.data.fanfics.length > 1) {
+                for (let i = db.data.fanfics.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [db.data.fanfics[i], db.data.fanfics[j]] = [db.data.fanfics[j], db.data.fanfics[i]];
+                }
+                db.data.adminStats.lastRecommendationShuffle = Date.now();
+                await db.write();
+                console.log('🔄 Рекомендации перемешаны автоматически');
+            }
+        } catch (error) {
+            console.error('Ошибка автоматического перемешивания:', error);
+        }
+    }, 30 * 60 * 1000);
+});
+
+// Обработка graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('🛑 Получен SIGTERM, завершаю работу...');
+    server.close(() => {
+        console.log('✅ Сервер остановлен');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('🛑 Получен SIGINT, завершаю работу...');
+    server.close(() => {
+        console.log('✅ Сервер остановлен');
+        process.exit(0);
+    });
 });
