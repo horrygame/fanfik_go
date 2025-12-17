@@ -1,25 +1,20 @@
-// Скрипт для поддержания активности сервера
 const https = require('https');
 
-function pingServer() {
-    const urls = [
-        process.env.RENDER_URL,
-        process.env.APP_URL
-    ].filter(url => url);
-    
-    urls.forEach(url => {
-        https.get(url, (res) => {
-            console.log(`✅ Пинг успешен: ${url} - ${res.statusCode}`);
-        }).on('error', (err) => {
-            console.error(`❌ Ошибка пинга ${url}:`, err.message);
-        });
+// URL вашего приложения на Render
+const url = process.env.APP_URL || 'https://fanfik-go.onrender.com';
+
+function keepAlive() {
+    https.get(url, (res) => {
+        console.log(`Keep-alive запрос отправлен. Статус: ${res.statusCode} - ${new Date().toISOString()}`);
+    }).on('error', (err) => {
+        console.error('Ошибка keep-alive запроса:', err.message);
     });
 }
 
-// Пинг каждые 5 минут
-setInterval(pingServer, 5 * 60 * 1000);
+// Отправлять запрос каждые 5 минут
+setInterval(keepAlive, 5 * 60 * 1000);
 
-// Первый пинг при запуске
-pingServer();
+// Первый запрос при запуске
+keepAlive();
 
-module.exports = { pingServer };
+console.log('Сервис keep-alive запущен. Запросы каждые 5 минут.');
