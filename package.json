@@ -1,12 +1,14 @@
 {
-  "name": "fanfik",
+  "name": "fanfik-platform",
   "version": "1.0.0",
-  "description": "Платформа для фанфиков с двухфакторной аутентификацией через Telegram",
+  "description": "Платформа для фанфиков с Telegram 2FA и системой пробуждения",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "render-start": "node server.js"
+    "keep-alive": "node keep-alive.js",
+    "render-start": "npm run start & npm run keep-alive",
+    "test": "echo \"Тесты не настроены\" && exit 0"
   },
   "dependencies": {
     "express": "^4.18.2",
