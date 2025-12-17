@@ -3,9 +3,13 @@ class FanFikClient {
         this.apiBase = window.location.origin;
         this.currentUser = null;
         this.currentFic = {
-            chapters: [],
+            chapters: [
+                { title: "Глава 1", content: "" }
+            ],
             currentChapter: 0
         };
+        this.currentReadingFic = null;
+        this.currentReadingChapter = 0;
         this.init();
     }
 
@@ -29,6 +33,7 @@ class FanFikClient {
         document.getElementById('closeCreateModal').addEventListener('click', () => this.hideCreateModal());
         document.getElementById('closeAuthModal').addEventListener('click', () => this.hideAuthModal());
         document.getElementById('closeTelegramModal').addEventListener('click', () => this.hideTelegramModal());
+        document.getElementById('closeFicReaderModal').addEventListener('click', () => this.hideFicReaderModal());
         
         // Создание фанфика
         document.getElementById('createFicBtn').addEventListener('click', () => this.showCreateModal());
@@ -45,12 +50,26 @@ class FanFikClient {
         // Поиск
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchFics(e.target.value));
         
+        // Навигация по главам при чтении
+        document.getElementById('prevChapterBtn').addEventListener('click', () => this.prevChapter());
+        document.getElementById('nextChapterBtn').addEventListener('click', () => this.nextChapter());
+        
         // Клик по фону для закрытия модалок
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 this.hideCreateModal();
                 this.hideAuthModal();
                 this.hideTelegramModal();
+                this.hideFicReaderModal();
+            }
+        });
+        
+        // Загрузка главы при клике на нее в списке
+        document.getElementById('chaptersList').addEventListener('click', (e) => {
+            const chapterItem = e.target.closest('.chapter-item');
+            if (chapterItem && chapterItem.dataset.index) {
+                const index = parseInt(chapterItem.dataset.index);
+                this.loadChapter(index);
             }
         });
     }
@@ -203,6 +222,9 @@ class FanFikClient {
         document.getElementById('logoutBtn').style.display = 'block';
         document.getElementById('createFicBtn').style.display = 'block';
         
+        // Устанавливаем никнейм в поле автора
+        document.getElementById('ficAuthor').value = this.currentUser.username;
+        
         if (this.currentUser.username === 'horrygame') {
             document.getElementById('adminBtn').style.display = 'block';
         }
@@ -226,6 +248,7 @@ class FanFikClient {
         document.getElementById('adminBtn').style.display = 'none';
         document.getElementById('telegramBindBtn').style.display = 'none';
         document.getElementById('createFicBtn').style.display = 'none';
+        document.getElementById('ficAuthor').value = '';
         this.loadFics();
     }
 
@@ -275,11 +298,16 @@ class FanFikClient {
         }
         
         document.getElementById('createModal').style.display = 'block';
+        // Устанавливаем автора как никнейм текущего пользователя
+        document.getElementById('ficAuthor').value = this.currentUser.username;
         this.currentFic = {
-            chapters: [],
+            chapters: [
+                { title: "Глава 1", content: "" }
+            ],
             currentChapter: 0
         };
         this.updateChaptersList();
+        this.loadChapter(0);
     }
 
     hideCreateModal() {
@@ -288,31 +316,18 @@ class FanFikClient {
     }
 
     addChapter() {
-        const title = document.getElementById('chapterTitle').value.trim();
-        const content = document.getElementById('ficContent').value.trim();
+        const newChapterNumber = this.currentFic.chapters.length + 1;
         
-        if (!title || !content) {
-            alert('Заполните название и текст главы');
-            return;
-        }
+        // Добавляем новую пустую главу
+        this.currentFic.chapters.push({ 
+            title: `Глава ${newChapterNumber}`, 
+            content: "" 
+        });
         
-        const chapterIndex = this.currentFic.currentChapter;
-        
-        if (this.currentFic.chapters[chapterIndex]) {
-            // Обновляем существующую главу
-            this.currentFic.chapters[chapterIndex] = { title, content };
-        } else {
-            // Добавляем новую главу
-            this.currentFic.chapters.push({ title, content });
-        }
-        
+        // Переключаемся на новую главу
+        this.currentFic.currentChapter = this.currentFic.chapters.length - 1;
         this.updateChaptersList();
-        
-        document.getElementById('chapterTitle').value = '';
-        document.getElementById('ficContent').value = '';
-        
-        // Сбрасываем выбор главы
-        this.currentFic.currentChapter = this.currentFic.chapters.length;
+        this.loadChapter(this.currentFic.currentChapter);
     }
 
     updateChaptersList() {
@@ -322,33 +337,46 @@ class FanFikClient {
         this.currentFic.chapters.forEach((chapter, index) => {
             const div = document.createElement('div');
             div.className = `chapter-item ${index === this.currentFic.currentChapter ? 'active' : ''}`;
+            div.dataset.index = index;
+            
+            const contentPreview = chapter.content 
+                ? chapter.content.substring(0, 60) + '...'
+                : 'Пустая глава';
+            
             div.innerHTML = `
                 <div style="font-weight: 600; margin-bottom: 0.3rem;">
-                    Глава ${index + 1}: ${chapter.title}
+                    ${chapter.title}
                 </div>
                 <div style="font-size: 0.9rem; color: #666;">
-                    ${chapter.content.substring(0, 60)}...
+                    ${contentPreview}
                 </div>
             `;
-            div.addEventListener('click', () => this.loadChapter(index));
             list.appendChild(div);
         });
     }
 
     loadChapter(index) {
+        if (index < 0 || index >= this.currentFic.chapters.length) {
+            return;
+        }
+        
         const chapter = this.currentFic.chapters[index];
         document.getElementById('chapterTitle').value = chapter.title;
         document.getElementById('ficContent').value = chapter.content;
         this.currentFic.currentChapter = index;
-        this.updateChaptersList();
+        
+        // Обновляем активный элемент в списке глав
+        const chapterItems = document.querySelectorAll('.chapter-item');
+        chapterItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
     }
 
     async submitFic() {
-        if (!this.currentFic.chapters.length) {
-            alert('Добавьте хотя бы одну главу');
-            return;
-        }
-        
         const title = document.getElementById('ficTitle').value.trim();
         const author = document.getElementById('ficAuthor').value.trim();
         const genre = document.getElementById('ficGenre').value.trim();
@@ -356,6 +384,24 @@ class FanFikClient {
         
         if (!title || !author || !genre) {
             alert('Заполните все обязательные поля');
+            return;
+        }
+        
+        // Сохраняем текущую главу перед отправкой
+        const currentTitle = document.getElementById('chapterTitle').value.trim();
+        const currentContent = document.getElementById('ficContent').value.trim();
+        
+        if (this.currentFic.currentChapter >= 0) {
+            this.currentFic.chapters[this.currentFic.currentChapter] = {
+                title: currentTitle || `Глава ${this.currentFic.currentChapter + 1}`,
+                content: currentContent
+            };
+        }
+        
+        // Проверяем, что хотя бы одна глава не пустая
+        const hasContent = this.currentFic.chapters.some(chapter => chapter.content.trim());
+        if (!hasContent) {
+            alert('Добавьте текст хотя бы в одну главу');
             return;
         }
         
@@ -460,10 +506,72 @@ class FanFikClient {
             </div>
             <div style="margin-top: 1.2rem; font-size: 0.9rem; color: #888;">
                 <i class="fas fa-calendar"></i> Опубликован: ${new Date(fic.createdAt).toLocaleDateString('ru-RU')}
+                <br>
+                <i class="fas fa-book"></i> Глав: ${fic.chapters?.length || 1}
             </div>
         `;
         
+        card.addEventListener('click', () => {
+            this.showFicReader(fic);
+        });
+        
         return card;
+    }
+
+    async showFicReader(fic) {
+        this.currentReadingFic = fic;
+        this.currentReadingChapter = 0;
+        
+        document.getElementById('ficReaderTitle').textContent = fic.title;
+        document.getElementById('ficReaderAuthor').textContent = `Автор: ${fic.author}`;
+        document.getElementById('ficReaderGenre').textContent = `Жанр: ${fic.genre.join(', ')}`;
+        document.getElementById('ficReaderAge').textContent = `Возраст: ${fic.age}`;
+        
+        this.updateReaderContent();
+        document.getElementById('ficReaderModal').style.display = 'block';
+    }
+
+    updateReaderContent() {
+        if (!this.currentReadingFic || !this.currentReadingFic.chapters) {
+            return;
+        }
+        
+        const chapter = this.currentReadingFic.chapters[this.currentReadingChapter];
+        if (!chapter) {
+            return;
+        }
+        
+        document.getElementById('ficReaderContent').textContent = chapter.content;
+        
+        // Обновляем информацию о текущей главе
+        document.getElementById('currentChapterInfo').textContent = 
+            `Глава ${this.currentReadingChapter + 1} из ${this.currentReadingFic.chapters.length}`;
+        
+        // Обновляем состояние кнопок навигации
+        document.getElementById('prevChapterBtn').disabled = this.currentReadingChapter === 0;
+        document.getElementById('nextChapterBtn').disabled = 
+            this.currentReadingChapter === this.currentReadingFic.chapters.length - 1;
+    }
+
+    prevChapter() {
+        if (this.currentReadingChapter > 0) {
+            this.currentReadingChapter--;
+            this.updateReaderContent();
+        }
+    }
+
+    nextChapter() {
+        if (this.currentReadingFic && 
+            this.currentReadingChapter < this.currentReadingFic.chapters.length - 1) {
+            this.currentReadingChapter++;
+            this.updateReaderContent();
+        }
+    }
+
+    hideFicReaderModal() {
+        document.getElementById('ficReaderModal').style.display = 'none';
+        this.currentReadingFic = null;
+        this.currentReadingChapter = 0;
     }
 
     showEmptyState() {
@@ -506,13 +614,14 @@ class FanFikClient {
 
     clearCreateForm() {
         document.getElementById('ficTitle').value = '';
-        document.getElementById('ficAuthor').value = '';
         document.getElementById('ficGenre').value = '';
         document.getElementById('ficAge').value = '0+';
         document.getElementById('chapterTitle').value = '';
         document.getElementById('ficContent').value = '';
         this.currentFic = {
-            chapters: [],
+            chapters: [
+                { title: "Глава 1", content: "" }
+            ],
             currentChapter: 0
         };
         this.updateChaptersList();
