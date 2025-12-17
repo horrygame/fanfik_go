@@ -139,6 +139,7 @@
             border: 1px solid rgba(210, 105, 30, 0.1);
             position: relative;
             overflow: hidden;
+            cursor: pointer;
         }
 
         .fic-card::before {
@@ -257,6 +258,69 @@
         .close-btn:hover {
             background: rgba(139, 69, 19, 0.1);
             transform: rotate(90deg);
+        }
+
+        /* Модальное окно чтения фанфика */
+        .fic-reader-modal {
+            max-width: 1000px;
+        }
+
+        .fic-reader-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid rgba(210, 105, 30, 0.2);
+        }
+
+        .fic-reader-title {
+            font-size: 2rem;
+            color: #8b4513;
+            margin-bottom: 1rem;
+        }
+
+        .fic-reader-meta {
+            display: flex;
+            gap: 2rem;
+            color: #a0522d;
+            font-size: 1rem;
+        }
+
+        .fic-reader-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: rgba(245, 233, 220, 0.3);
+            border-radius: 10px;
+        }
+
+        .chapters-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid rgba(210, 105, 30, 0.2);
+        }
+
+        .chapter-nav-btn {
+            background: linear-gradient(to bottom, #d2691e, #b5651d);
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+        }
+
+        .chapter-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .current-chapter {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #8b4513;
         }
 
         .telegram-modal-content {
@@ -502,6 +566,16 @@
                 padding: 1.5rem;
                 margin: 5% auto;
             }
+            
+            .fic-reader-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .chapters-nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
         }
     </style>
 </head>
@@ -555,7 +629,7 @@
                 <div class="left-panel">
                     <h3><i class="fas fa-info-circle"></i> Информация</h3>
                     <input type="text" id="ficTitle" placeholder="Название произведения">
-                    <input type="text" id="ficAuthor" placeholder="Имя автора">
+                    <input type="text" id="ficAuthor" placeholder="Ваш никнейм (автор)" readonly>
                     <input type="text" id="ficGenre" placeholder="Жанр (через запятую)">
                     <select id="ficAge">
                         <option value="0+">0+ - Для всех возрастов</option>
@@ -569,12 +643,21 @@
                 </div>
                 <div class="main-panel">
                     <h3><i class="fas fa-edit"></i> Редактор</h3>
-                    <input type="text" id="chapterTitle" placeholder="Название главы">
-                    <textarea id="ficContent" placeholder="Начните писать свой фанфик здесь..."></textarea>
+                    <input type="text" id="chapterTitle" placeholder="Название главы (например: Глава 1)">
+                    <textarea id="ficContent" placeholder="Начните писать первую главу вашего фанфика здесь..."></textarea>
                 </div>
                 <div class="chapters-panel">
                     <h3><i class="fas fa-list"></i> Главы</h3>
-                    <div id="chaptersList"></div>
+                    <div id="chaptersList">
+                        <div class="chapter-item active" data-index="0">
+                            <div style="font-weight: 600; margin-bottom: 0.3rem;">
+                                Глава 1
+                            </div>
+                            <div style="font-size: 0.9rem; color: #666;">
+                                Первая глава
+                            </div>
+                        </div>
+                    </div>
                     <button id="addChapterBtn">
                         <i class="fas fa-plus"></i> Добавить главу
                     </button>
@@ -644,6 +727,37 @@
             <p style="color: #888; margin-top: 1.5rem; font-size: 0.9rem;">
                 <i class="fas fa-info-circle"></i> После привязки для входа потребуется код подтверждения из Telegram
             </p>
+        </div>
+    </div>
+
+    <!-- Модальное окно чтения фанфика -->
+    <div id="ficReaderModal" class="modal">
+        <div class="modal-content fic-reader-modal">
+            <span class="close-btn" id="closeFicReaderModal">&times;</span>
+            <div class="fic-reader-header">
+                <h2 class="fic-reader-title" id="ficReaderTitle">Название фанфика</h2>
+                <div class="fic-reader-meta">
+                    <span id="ficReaderAuthor">Автор: </span>
+                    <span id="ficReaderGenre">Жанр: </span>
+                    <span id="ficReaderAge">Возраст: </span>
+                </div>
+            </div>
+            
+            <div class="fic-reader-content" id="ficReaderContent">
+                Содержимое фанфика будет здесь...
+            </div>
+            
+            <div class="chapters-nav">
+                <button id="prevChapterBtn" class="chapter-nav-btn">
+                    <i class="fas fa-chevron-left"></i> Предыдущая глава
+                </button>
+                <div class="current-chapter" id="currentChapterInfo">
+                    Глава 1 из 1
+                </div>
+                <button id="nextChapterBtn" class="chapter-nav-btn">
+                    Следующая глава <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </div>
     </div>
 
