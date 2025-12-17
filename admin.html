@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель - Кофейня Фанфиков</title>
+    <title>Админ-панель FanFik</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -28,7 +28,7 @@
             margin-bottom: 30px;
             padding: 20px;
             background: linear-gradient(to right, #8b4513, #a0522d);
-            border-radius: 15px;
+            border-radius: 12px;
             color: white;
             box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
         }
@@ -37,37 +37,7 @@
             margin: 0;
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-        
-        .admin-actions {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .export-btn {
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
-        }
-        
-        .export-btn.users {
-            background: linear-gradient(135deg, #2196F3, #0D47A1);
+            gap: 12px;
         }
         
         .stats-cards {
@@ -79,17 +49,11 @@
         
         .stat-card {
             background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 12px;
             box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
             text-align: center;
             border: 1px solid rgba(210, 105, 30, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(139, 69, 19, 0.2);
         }
         
         .stat-number {
@@ -104,6 +68,44 @@
             color: #666;
         }
         
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #a0522d, #8b4513);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+        }
+        
+        .export-btn {
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+        }
+        
+        .export-btn.users {
+            background: linear-gradient(to bottom, #2196F3, #0D47A1);
+        }
+        
+        .back-btn {
+            background: linear-gradient(to bottom, #757575, #424242);
+        }
+        
         .pending-fics {
             display: grid;
             gap: 25px;
@@ -113,7 +115,7 @@
         .fic-item {
             background: rgba(255, 255, 255, 0.95);
             padding: 25px;
-            border-radius: 15px;
+            border-radius: 12px;
             box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
             border: 1px solid rgba(210, 105, 30, 0.1);
             position: relative;
@@ -125,7 +127,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 6px;
+            width: 5px;
             height: 100%;
             background: linear-gradient(to bottom, #d2691e, #8b4513);
         }
@@ -134,13 +136,13 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
             gap: 15px;
         }
         
         .fic-title {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             color: #8b4513;
             margin: 0;
             flex: 1;
@@ -148,22 +150,33 @@
         
         .fic-meta {
             color: #a0522d;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: flex;
             gap: 15px;
             align-items: center;
         }
         
-        .fic-author {
-            font-style: italic;
+        .fic-tags {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .fic-tag {
+            padding: 5px 12px;
+            background: rgba(210, 105, 30, 0.1);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: #8b4513;
         }
         
         .chapter-content {
             margin-top: 15px;
             padding: 20px;
             background: rgba(245, 233, 220, 0.5);
-            border-radius: 10px;
-            max-height: 250px;
+            border-radius: 8px;
+            max-height: 200px;
             overflow-y: auto;
             line-height: 1.6;
             border: 1px solid rgba(210, 105, 30, 0.2);
@@ -171,52 +184,31 @@
         
         .controls {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             margin-top: 20px;
             flex-wrap: wrap;
             align-items: center;
         }
         
-        select, button {
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: 1px solid #a0522d;
-            font-family: 'Georgia', serif;
-            font-size: 1rem;
-        }
-        
         select {
-            background-color: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid #a0522d;
+            background: white;
             color: #5d4037;
-            min-width: 120px;
-        }
-        
-        button {
-            background: linear-gradient(to bottom, #a0522d, #8b4513);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+            min-width: 100px;
         }
         
         .btn-approve {
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
         }
         
         .btn-reject {
-            background: linear-gradient(135deg, #f44336, #c62828);
+            background: linear-gradient(to bottom, #f44336, #c62828);
         }
         
         .btn-delete {
-            background: linear-gradient(135deg, #757575, #424242);
+            background: linear-gradient(to bottom, #757575, #424242);
         }
         
         .mark-buttons {
@@ -237,24 +229,9 @@
         }
         
         .mark-btn.active {
-            background: linear-gradient(135deg, #d2691e, #8b4513);
+            background: linear-gradient(to bottom, #d2691e, #8b4513);
             color: white;
             border-color: #8b4513;
-        }
-        
-        .fic-tags {
-            display: flex;
-            gap: 8px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .fic-tag {
-            padding: 5px 12px;
-            background: rgba(210, 105, 30, 0.1);
-            border-radius: 15px;
-            font-size: 0.85rem;
-            color: #8b4513;
         }
         
         .empty-state {
@@ -263,7 +240,7 @@
             color: #8b4513;
             font-size: 1.2rem;
             background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
+            border-radius: 12px;
             margin-top: 30px;
         }
         
@@ -274,22 +251,11 @@
             opacity: 0.5;
         }
         
-        .back-btn {
-            background: linear-gradient(135deg, #9E9E9E, #616161);
-            margin-top: 30px;
-        }
-        
-        .export-options {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
         .json-preview {
             background: #2d2d2d;
             color: #f8f8f2;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 8px;
             max-height: 400px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
@@ -299,12 +265,33 @@
             margin-top: 20px;
             display: none;
         }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .admin-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            select, button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="admin-header">
-            <h1><i class="fas fa-crown"></i> Админ-панель Кофейни Фанфиков</h1>
+            <h1><i class="fas fa-crown"></i> Админ-панель FanFik</h1>
             <button class="back-btn" onclick="window.location.href='/'">
                 <i class="fas fa-arrow-left"></i> На главную
             </button>
@@ -325,25 +312,23 @@
             </div>
             <div class="stat-card">
                 <div class="stat-number" id="telegramUsers">0</div>
-                <div class="stat-label">С Telegram 2FA</div>
+                <div class="stat-label">С Telegram</div>
             </div>
         </div>
         
         <div class="admin-actions">
             <button class="export-btn" onclick="adminPanel.exportFics()">
-                <i class="fas fa-download"></i> Экспорт фанфиков (JSON)
+                <i class="fas fa-download"></i> Экспорт фанфиков
             </button>
             <button class="export-btn users" onclick="adminPanel.exportUsers()">
-                <i class="fas fa-users"></i> Экспорт пользователей (JSON)
+                <i class="fas fa-users"></i> Экспорт пользователей
             </button>
         </div>
         
         <div class="json-preview" id="jsonPreview"></div>
         
         <h2><i class="fas fa-clock"></i> Фанфики на рассмотрении</h2>
-        <div id="pendingFicsList" class="pending-fics">
-            <!-- Фанфики на рассмотрении будут здесь -->
-        </div>
+        <div id="pendingFicsList" class="pending-fics"></div>
     </div>
 
     <script>
@@ -360,7 +345,7 @@
                 setInterval(() => {
                     this.loadPendingFics();
                     this.loadStats();
-                }, 30000); // Обновление каждые 30 секунд
+                }, 30000);
             }
             
             async checkAdminAccess() {
@@ -395,32 +380,67 @@
                         this.displayPendingFics(fics);
                     }
                 } catch (error) {
-                    console.error('Load pending fics error:', error);
+                    console.error('Ошибка загрузки фанфиков:', error);
                     this.showEmptyState();
                 }
             }
             
             async loadStats() {
                 try {
+                    const response = await fetch(`${this.apiBase}/api/fics`);
+                    const fics = await response.json();
+                    
+                    const totalFics = fics.length;
+                    const pendingFics = await this.getPendingCount();
+                    const totalUsers = await this.getUsersCount();
+                    const telegramUsers = await this.getTelegramUsersCount();
+                    
+                    document.getElementById('totalFics').textContent = totalFics;
+                    document.getElementById('pendingFics').textContent = pendingFics;
+                    document.getElementById('totalUsers').textContent = totalUsers;
+                    document.getElementById('telegramUsers').textContent = telegramUsers;
+                } catch (error) {
+                    console.error('Ошибка загрузки статистики:', error);
+                }
+            }
+            
+            async getPendingCount() {
+                try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch(`${this.apiBase}/api/stats`, {
+                    const response = await fetch(`${this.apiBase}/api/pending-fics`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     
                     if (response.ok) {
-                        const stats = await response.json();
-                        this.updateStats(stats);
+                        const fics = await response.json();
+                        return fics.length;
                     }
                 } catch (error) {
-                    console.error('Load stats error:', error);
+                    return 0;
                 }
             }
             
-            updateStats(stats) {
-                document.getElementById('totalFics').textContent = stats.totalFics;
-                document.getElementById('pendingFics').textContent = stats.pendingFics;
-                document.getElementById('totalUsers').textContent = stats.totalUsers;
-                document.getElementById('telegramUsers').textContent = stats.telegramUsers;
+            async getUsersCount() {
+                try {
+                    const response = await fetch(`${this.apiBase}/api/export/users`);
+                    const data = await response.json();
+                    return data.total || 0;
+                } catch (error) {
+                    return 0;
+                }
+            }
+            
+            async getTelegramUsersCount() {
+                try {
+                    const response = await fetch(`${this.apiBase}/api/export/users`);
+                    const data = await response.json();
+                    if (data.users) {
+                        return data.users.filter(user => user.hasTelegram).length;
+                    }
+                    return 0;
+                } catch (error) {
+                    return 0;
+                }
             }
             
             displayPendingFics(fics) {
@@ -451,10 +471,8 @@
                     <div class="fic-header">
                         <h3 class="fic-title">${fic.title}</h3>
                         <div class="fic-meta">
-                            <span class="fic-author">
-                                <i class="fas fa-user"></i> ${fic.author}
-                            </span>
-                            <span><i class="fas fa-calendar"></i> ${new Date(fic.createdAt).toLocaleDateString()}</span>
+                            <span>Автор: ${fic.author}</span>
+                            <span>Отправлен: ${new Date(fic.createdAt).toLocaleDateString()}</span>
                         </div>
                     </div>
                     
@@ -465,7 +483,7 @@
                     
                     <div class="chapter-content">
                         <strong>Первая глава:</strong><br>
-                        ${fic.chapters[0]?.content.substring(0, 500)}...
+                        ${fic.chapters[0]?.content.substring(0, 300)}...
                     </div>
                     
                     <div class="controls">
@@ -507,7 +525,6 @@
                     </div>
                 `;
                 
-                // Добавляем обработчик изменения возрастного рейтинга
                 const select = ficElement.querySelector('.age-select');
                 select.addEventListener('change', (e) => {
                     this.updateAge(fic.id, e.target.value);
@@ -522,7 +539,7 @@
                     <div class="empty-state">
                         <i class="fas fa-check-circle"></i>
                         <h3>Нет фанфиков на рассмотрении</h3>
-                        <p>Все работы проверены! Отличная работа!</p>
+                        <p>Все работы проверены!</p>
                     </div>
                 `;
             }
@@ -540,7 +557,7 @@
                         this.downloadJson(data, 'fanfics_export.json');
                     }
                 } catch (error) {
-                    console.error('Export fics error:', error);
+                    console.error('Ошибка экспорта:', error);
                     alert('Ошибка при экспорте фанфиков');
                 }
             }
@@ -558,7 +575,7 @@
                         this.downloadJson(data, 'users_export.json');
                     }
                 } catch (error) {
-                    console.error('Export users error:', error);
+                    console.error('Ошибка экспорта:', error);
                     alert('Ошибка при экспорте пользователей');
                 }
             }
@@ -581,7 +598,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                alert(`Файл ${filename} успешно скачан!`);
+                alert(`Файл ${filename} скачан!`);
             }
             
             async approveFic(ficId) {
@@ -597,7 +614,7 @@
             }
             
             async deleteFic(ficId) {
-                if (confirm('Удалить фанфик навсегда? Это действие нельзя отменить.')) {
+                if (confirm('Удалить фанфик навсегда?')) {
                     await this.updateFicStatus(ficId, 'deleted');
                 }
             }
@@ -619,8 +636,8 @@
                         this.loadStats();
                     }
                 } catch (error) {
-                    console.error('Update fic error:', error);
-                    alert('Ошибка при обновлении статуса фанфика');
+                    console.error('Ошибка обновления:', error);
+                    alert('Ошибка при обновлении статуса');
                 }
             }
             
@@ -640,7 +657,7 @@
                         this.loadPendingFics();
                     }
                 } catch (error) {
-                    console.error('Set mark error:', error);
+                    console.error('Ошибка установки метки:', error);
                 }
             }
             
@@ -656,12 +673,11 @@
                         body: JSON.stringify({ ficId, age })
                     });
                 } catch (error) {
-                    console.error('Update age error:', error);
+                    console.error('Ошибка обновления возраста:', error);
                 }
             }
         }
         
-        // Инициализация админ-панели
         document.addEventListener('DOMContentLoaded', () => {
             window.adminPanel = new AdminPanel();
         });
