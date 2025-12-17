@@ -12,7 +12,7 @@ class KeepAlive {
         this.urls = [
             process.env.RENDER_URL,
             process.env.APP_URL,
-            'https://fanfik.onrender.com'
+            'https://fanfik-go.onrender.com'
         ].filter(url => url && url.startsWith('http'));
         
         this.interval = 4 * 60 * 1000 + 50 * 1000; // 4 минуты 50 секунд
