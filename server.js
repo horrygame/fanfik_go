@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const TelegramBot = require('node-telegram-bot-api');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -112,7 +113,7 @@ function checkAdmin(req, res, next) {
 
 // Инициализация при запуске
 loadData().then(() => {
-    console.log('✅ Данные загружены');
+    console.log('✅ Данные успешно загружены');
 });
 
 // API маршруты
@@ -212,7 +213,8 @@ app.post('/api/login', async (req, res) => {
                             `🔐 *Код подтверждения для входа в FanFik*\n\n` +
                             `Код: \`${verificationCode}\`\n` +
                             `Действует: 5 минут\n` +
-                            `Имя пользователя: ${username}\n\n` +
+                            `Имя пользователя: ${username}\n` +
+                            `Время: ${new Date().toLocaleTimeString('ru-RU')}\n\n` +
                             `_Если это были не вы, проигнорируйте это сообщение._`,
                             { parse_mode: 'Markdown' }
                         );
@@ -551,12 +553,36 @@ setInterval(() => {
     }
 }, 60 * 1000); // Каждую минуту
 
+// Функция для поддержания активности сервера
+function keepAlive() {
+    const renderUrl = process.env.RENDER_URL;
+    if (!renderUrl) {
+        console.log('⚠️ RENDER_URL не установлен, keep-alive отключен');
+        return;
+    }
+    
+    console.log(`🔄 Пинг сервера: ${renderUrl}`);
+    
+    https.get(renderUrl, (res) => {
+        console.log(`✅ Сервер активен, статус: ${res.statusCode}`);
+    }).on('error', (err) => {
+        console.error(`❌ Ошибка пинга: ${err.message}`);
+    });
+}
+
+// Пинг каждые 5 минут (300000 мс)
+setInterval(keepAlive, 5 * 60 * 1000);
+
+// Первый пинг через 1 минуту после запуска
+setTimeout(keepAlive, 60 * 1000);
+
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     console.log(`👥 Пользователей: ${users.length}`);
     console.log(`📚 Фанфиков: ${fics.length}`);
     console.log(`🤖 Telegram бот: ${bot ? 'активен' : 'не настроен'}`);
+    console.log(`🔄 Keep-alive активен, пинг каждые 5 минут`);
 });
 
 // Экспортируем для тестов
