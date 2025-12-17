@@ -2,12 +2,17 @@
 const https = require('https');
 
 function pingServer() {
-    const url = process.env.RENDER_URL || 'https://your-app.onrender.com';
+    const urls = [
+        process.env.RENDER_URL,
+        process.env.APP_URL
+    ].filter(url => url);
     
-    https.get(url, (res) => {
-        console.log(`Ping successful: ${res.statusCode}`);
-    }).on('error', (err) => {
-        console.error('Ping failed:', err.message);
+    urls.forEach(url => {
+        https.get(url, (res) => {
+            console.log(`✅ Пинг успешен: ${url} - ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.error(`❌ Ошибка пинга ${url}:`, err.message);
+        });
     });
 }
 
@@ -16,3 +21,5 @@ setInterval(pingServer, 5 * 60 * 1000);
 
 // Первый пинг при запуске
 pingServer();
+
+module.exports = { pingServer };
