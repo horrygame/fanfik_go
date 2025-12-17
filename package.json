@@ -1,21 +1,32 @@
 {
-  "name": "fanfik",
+  "name": "fanfiction-site",
   "version": "1.0.0",
-  "description": "Платформа для фанфиков с двухфакторной аутентификацией через Telegram",
+  "description": "Фанфик сайт с админ-панелью и Telegram 2FA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "keep-alive": "node keep-alive.js",
     "dev": "nodemon server.js",
-    "render-start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "keep-alive:once": "node -e \"require('./keep-alive').testConnection()\""
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "jsonwebtoken": "^9.0.2",
-    "bcrypt": "^5.1.1",
-    "node-telegram-bot-api": "^0.64.0"
+    "express-session": "^1.17.3",
+    "bcryptjs": "^2.4.3",
+    "node-telegram-bot-api": "^0.61.0",
+    "lowdb": "^5.1.0",
+    "uuid": "^9.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "fanfiction",
+    "blog",
+    "stories",
+    "admin"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
