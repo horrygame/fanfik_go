@@ -3,7 +3,7 @@ services:
     name: fanfik-platform
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: npm run dual-keep-alive
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
@@ -11,5 +11,7 @@ services:
         generateValue: true
       - key: TELEGRAM_BOT_TOKEN
         sync: false
-    healthCheckPath: /
+      - key: RENDER_URL
+        sync: false
+    healthCheckPath: /health
     autoDeploy: true
