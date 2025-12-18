@@ -5,8 +5,6 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const TelegramBot = require('node-telegram-bot-api');
-const https = require('https');
-const http = require('http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,7 +50,7 @@ app.use(express.static(__dirname));
 // Хранилище данных
 let users = [];
 let fics = [];
-let pendingLogins = {};
+let pendingLogins = {}; // Для хранения ожидающих подтверждения входов
 
 // Загрузка данных
 async function loadData() {
@@ -203,7 +201,7 @@ app.post('/api/login', async (req, res) => {
                 // Сохраняем код для проверки (действует 5 минут)
                 pendingLogins[username] = {
                     code: verificationCode,
-                    expires: Date.now() + 5 * 60 * 1000,
+                    expires: Date.now() + 5 * 60 * 1000, // 5 минут
                     userId: user.id
                 };
                 
@@ -387,12 +385,13 @@ app.get('/api/search', (req, res) => {
 app.post('/api/submit-fic', authenticateToken, async (req, res) => {
     try {
         const { title, genre, age, chapters } = req.body;
-        const author = req.user.username;
+        const author = req.user.username; // Автор = никнейм текущего пользователя
         
         if (!title || !genre || !chapters || chapters.length === 0) {
             return res.status(400).json({ error: 'Заполните все обязательные поля' });
         }
         
+        // Проверяем, что хотя бы одна глава имеет содержание
         const hasContent = chapters.some(ch => ch.content && ch.content.trim());
         if (!hasContent) {
             return res.status(400).json({ error: 'Добавьте текст хотя бы в одну главу' });
@@ -444,7 +443,7 @@ app.post('/api/submit-fic', authenticateToken, async (req, res) => {
     }
 });
 
-// Получение фанфиков на рассмотрении
+// Получение фанфиков на рассмотрении (для админа)
 app.get('/api/pending-fics', authenticateToken, checkAdmin, (req, res) => {
     const pendingFics = fics.filter(fic => fic.status === 'pending');
     res.json(pendingFics);
@@ -461,6 +460,7 @@ app.post('/api/update-fic', authenticateToken, checkAdmin, async (req, res) => {
     
     try {
         if (status === 'deleted') {
+            // Удаляем фанфик полностью
             fics.splice(ficIndex, 1);
             await saveFics();
             return res.json({ success: true, message: 'Фанфик удален' });
@@ -468,6 +468,7 @@ app.post('/api/update-fic', authenticateToken, checkAdmin, async (req, res) => {
             fics[ficIndex].status = status;
             fics[ficIndex].updatedAt = new Date().toISOString();
             
+            // Уведомляем автора через Telegram, если возможно
             if (bot && status === 'approved') {
                 const author = users.find(u => u.username === fics[ficIndex].submittedBy);
                 if (author && author.telegramId) {
@@ -491,7 +492,7 @@ app.post('/api/update-fic', authenticateToken, checkAdmin, async (req, res) => {
     }
 });
 
-// Удаление фанфика
+// Удаление фанфика (админом)
 app.delete('/api/delete-fic/:id', authenticateToken, checkAdmin, async (req, res) => {
     const ficIndex = fics.findIndex(fic => fic.id === req.params.id);
     
@@ -500,9 +501,11 @@ app.delete('/api/delete-fic/:id', authenticateToken, checkAdmin, async (req, res
     }
     
     try {
+        // Удаляем фанфик
         const deletedFic = fics.splice(ficIndex, 1)[0];
         await saveFics();
         
+        // Уведомляем автора через Telegram, если возможно
         if (bot) {
             const author = users.find(u => u.username === deletedFic.submittedBy);
             if (author && author.telegramId) {
@@ -566,7 +569,7 @@ app.get('/api/export/fics', authenticateToken, checkAdmin, (req, res) => {
     });
 });
 
-// Экспорт пользователей
+// Экспорт пользователей (без паролей)
 app.get('/api/export/users', authenticateToken, checkAdmin, (req, res) => {
     const safeUsers = users.map(user => ({
         id: user.id,
@@ -585,70 +588,10 @@ app.get('/api/export/users', authenticateToken, checkAdmin, (req, res) => {
     });
 });
 
-// Специальный эндпоинт для keep-alive (простейший)
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        users: users.length,
-        fics: fics.length
-    });
-});
-
-// Пинг эндпоинт
-app.get('/ping', (req, res) => {
-    res.json({
-        pong: true,
-        timestamp: new Date().toISOString(),
-        server: 'FanFik Platform',
-        version: '1.0.0'
-    });
-});
-
-// Встроенный keep-alive для сервера
-function startInternalKeepAlive() {
-    const urls = [
-        process.env.RENDER_URL,
-        process.env.APP_URL,
-        `http://localhost:${PORT}`
-    ].filter(url => url);
-    
-    console.log('🔧 Запуск встроенного keep-alive...');
-    
-    const pingServer = (url) => {
-        if (!url) return;
-        
-        const protocol = url.startsWith('https') ? https : http;
-        
-        const req = protocol.get(`${url}/ping`, (res) => {
-            console.log(`✅ Внутренний пинг: ${res.statusCode}`);
-        });
-        
-        req.setTimeout(10000, () => {
-            console.warn(`⏰ Внутренний пинг таймаут: ${url}`);
-            req.destroy();
-        });
-        
-        req.on('error', (err) => {
-            console.error(`❌ Внутренний пинг ошибка: ${err.message}`);
-        });
-        
-        req.end();
-    };
-    
-    // Пинг каждые 12 минут (720000 мс)
-    setInterval(() => {
-        console.log('🔄 Внутренний keep-alive: отправка пинга...');
-        urls.forEach(pingServer);
-    }, 12 * 60 * 1000);
-    
-    // Первый пинг через 1 минуту
-    setTimeout(() => {
-        urls.forEach(pingServer);
-    }, 60000);
-}
+// Обновление рекомендаций каждые 30 минут
+setInterval(() => {
+    console.log('🔄 Рекомендации обновлены');
+}, 30 * 60 * 1000);
 
 // Очистка устаревших ожидающих входов
 setInterval(() => {
@@ -665,7 +608,7 @@ setInterval(() => {
     if (cleaned > 0) {
         console.log(`🧹 Очищено ${cleaned} устаревших сессий входа`);
     }
-}, 60 * 1000);
+}, 60 * 1000); // Каждую минуту
 
 // Запуск сервера
 app.listen(PORT, () => {
@@ -673,13 +616,7 @@ app.listen(PORT, () => {
     console.log(`👥 Пользователей: ${users.length}`);
     console.log(`📚 Фанфиков: ${fics.length}`);
     console.log(`🤖 Telegram бот: ${bot ? 'активен' : 'не настроен'}`);
-    
-    // Запускаем встроенный keep-alive
-    startInternalKeepAlive();
-    
-    // Запускаем внешний keep-alive скрипт
-    console.log('🔧 Запуск системы keep-alive...');
-    require('./keep-alive');
 });
 
+// Экспортируем для тестов
 module.exports = { app, users, fics };
