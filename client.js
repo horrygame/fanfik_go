@@ -29,11 +29,15 @@ class FanFikClient {
         // Кнопка привязки Telegram
         document.getElementById('telegramBindBtn').addEventListener('click', () => this.showTelegramModal());
         
+        // Ссылка "Забыли пароль?"
+        document.getElementById('forgotPasswordLink').addEventListener('click', () => this.showForgotPasswordModal());
+        
         // Закрытие модальных окон
         document.getElementById('closeCreateModal').addEventListener('click', () => this.hideCreateModal());
         document.getElementById('closeAuthModal').addEventListener('click', () => this.hideAuthModal());
         document.getElementById('closeTelegramModal').addEventListener('click', () => this.hideTelegramModal());
         document.getElementById('closeFicReaderModal').addEventListener('click', () => this.hideFicReaderModal());
+        document.getElementById('closeForgotPasswordModal').addEventListener('click', () => this.hideForgotPasswordModal());
         
         // Создание фанфика
         document.getElementById('createFicBtn').addEventListener('click', () => this.showCreateModal());
@@ -46,6 +50,9 @@ class FanFikClient {
         
         // Привязка Telegram
         document.getElementById('bindTelegramBtn').addEventListener('click', () => this.bindTelegram());
+        
+        // Сброс пароля
+        document.getElementById('sendResetLinkBtn').addEventListener('click', () => this.sendResetLink());
         
         // Поиск
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchFics(e.target.value));
@@ -61,6 +68,7 @@ class FanFikClient {
                 this.hideAuthModal();
                 this.hideTelegramModal();
                 this.hideFicReaderModal();
+                this.hideForgotPasswordModal();
             }
         });
         
@@ -175,6 +183,61 @@ class FanFikClient {
                                           type === 'info' ? '#e3f2fd' : '#e8f5e9';
         authMessage.style.color = type === 'error' ? '#c62828' : 
                                  type === 'info' ? '#1565c0' : '#2e7d32';
+    }
+
+    showForgotPasswordModal() {
+        document.getElementById('forgotPasswordModal').style.display = 'block';
+        document.getElementById('forgotUsername').value = '';
+        this.showForgotMessage('', '', false);
+    }
+
+    hideForgotPasswordModal() {
+        document.getElementById('forgotPasswordModal').style.display = 'none';
+    }
+
+    async sendResetLink() {
+        const username = document.getElementById('forgotUsername').value.trim();
+        
+        if (!username) {
+            this.showForgotMessage('Введите имя пользователя', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${this.apiBase}/api/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.showForgotMessage('Ссылка для сброса пароля отправлена в ваш Telegram аккаунт', 'success');
+                setTimeout(() => {
+                    this.hideForgotPasswordModal();
+                    this.showForgotMessage('', '', false);
+                }, 3000);
+            } else {
+                this.showForgotMessage(data.error || 'Ошибка при отправке ссылки', 'error');
+            }
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            this.showForgotMessage('Ошибка соединения с сервером', 'error');
+        }
+    }
+
+    showForgotMessage(message, type, show = true) {
+        const forgotMessage = document.getElementById('forgotMessage');
+        if (!show) {
+            forgotMessage.style.display = 'none';
+            return;
+        }
+        
+        forgotMessage.textContent = message;
+        forgotMessage.style.display = 'block';
+        forgotMessage.style.backgroundColor = type === 'error' ? '#ffebee' : '#e8f5e9';
+        forgotMessage.style.color = type === 'error' ? '#c62828' : '#2e7d32';
     }
 
     async bindTelegram() {
