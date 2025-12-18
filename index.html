@@ -531,6 +531,20 @@
             opacity: 0.6;
         }
 
+        .forgot-password-link {
+            text-align: center;
+            margin-top: 1rem;
+            color: #8b4513;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: underline;
+        }
+
+        .forgot-password-link:hover {
+            color: #a0522d;
+            text-decoration: none;
+        }
+
         @media (max-width: 1100px) {
             .creation-container {
                 flex-direction: column;
@@ -678,8 +692,30 @@
             <button id="authSubmitBtn">
                 <i class="fas fa-sign-in-alt"></i> Войти
             </button>
+            <p class="forgot-password-link" id="forgotPasswordLink">
+                Забыли пароль?
+            </p>
             <p id="authSwitch" style="margin-top: 1.5rem; text-align: center; cursor: pointer; color: #8b4513; font-weight: 600;">
                 Нет аккаунта? Зарегистрируйтесь
+            </p>
+        </div>
+    </div>
+
+    <!-- Модальное окно сброса пароля -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" id="closeForgotPasswordModal">&times;</span>
+            <h2><i class="fas fa-key"></i> Сброс пароля</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">
+                Для сброса пароля введите имя пользователя. Ссылка для сброса будет отправлена в привязанный Telegram аккаунт.
+            </p>
+            <input type="text" id="forgotUsername" placeholder="Введите ваше имя пользователя">
+            <div id="forgotMessage" style="margin: 1rem 0; padding: 1rem; border-radius: 8px; display: none;"></div>
+            <button id="sendResetLinkBtn">
+                <i class="fas fa-paper-plane"></i> Отправить ссылку для сброса
+            </button>
+            <p style="text-align: center; margin-top: 1.5rem; color: #8b4513;">
+                <i class="fas fa-info-circle"></i> Если у вас не привязан Telegram, обратитесь к администратору.
             </p>
         </div>
     </div>
