@@ -22,7 +22,7 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
             const chatId = msg.chat.id;
             bot.sendMessage(chatId, 
                 `👋 Привет! Я бот FanFik для двухфакторной аутентификации.\n\n` +
-                `Ваш Chat ID: \`${chatId}\`\n\n` +
+                `Ваш Chat ID: \`{chatId}\`\n\n` +
                 `📋 Как использовать:\n` +
                 `1. Скопируйте этот Chat ID\n` +
                 `2. На сайте FanFik введите его в поле привязки Telegram\n` +
@@ -51,6 +51,7 @@ app.use(express.static(__dirname));
 let users = [];
 let fics = [];
 let pendingLogins = {}; // Для хранения ожидающих подтверждения входов
+let resetTokens = {}; // Для хранения токенов сброса пароля
 
 // Загрузка данных
 async function loadData() {
@@ -85,6 +86,11 @@ async function saveFics() {
 // Генерация 2FA кода
 function generate2FACode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Генерация токена сброса пароля
+function generateResetToken() {
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
 // Middleware для проверки JWT
@@ -273,6 +279,158 @@ app.post('/api/login', async (req, res) => {
         console.error('Ошибка входа:', error);
         res.status(500).json({ error: 'Ошибка при входе' });
     }
+});
+
+// Запрос на сброс пароля
+app.post('/api/forgot-password', async (req, res) => {
+    const { username } = req.body;
+    
+    if (!username) {
+        return res.status(400).json({ error: 'Введите имя пользователя' });
+    }
+    
+    const user = users.find(u => u.username === username);
+    if (!user) {
+        return res.status(404).json({ error: 'Пользователь с таким именем не найден' });
+    }
+    
+    // Если у пользователя не привязан Telegram, не можем сбросить пароль
+    if (!user.telegramId) {
+        return res.status(400).json({ 
+            error: 'Для сброса пароля необходимо иметь привязанный Telegram аккаунт. Обратитесь к администратору.' 
+        });
+    }
+    
+    try {
+        // Генерируем токен сброса
+        const resetToken = generateResetToken();
+        const expires = Date.now() + 15 * 60 * 1000; // 15 минут
+        
+        resetTokens[resetToken] = {
+            username: user.username,
+            userId: user.id,
+            expires: expires
+        };
+        
+        // Отправляем ссылку для сброса пароля в Telegram
+        const resetLink = `${req.headers.origin || 'http://localhost:3000'}/reset-password.html?token=${resetToken}`;
+        
+        if (bot) {
+            try {
+                await bot.sendMessage(user.telegramId,
+                    `🔐 *Запрос на сброс пароля FanFik*\n\n` +
+                    `Вы запросили сброс пароля для аккаунта *${username}*.\n\n` +
+                    `Для сброса пароля перейдите по ссылке:\n` +
+                    `${resetLink}\n\n` +
+                    `⚠️ *Важно:*\n` +
+                    `• Ссылка действительна 15 минут\n` +
+                    `• Если это были не вы, проигнорируйте это сообщение\n` +
+                    `• Никому не передавайте эту ссылку`,
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (error) {
+                console.error('Ошибка отправки ссылки в Telegram:', error);
+                return res.status(500).json({ error: 'Не удалось отправить ссылку для сброса пароля' });
+            }
+        } else {
+            return res.status(500).json({ error: 'Телеграм бот не настроен' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Ссылка для сброса пароля отправлена в Telegram' 
+        });
+    } catch (error) {
+        console.error('Ошибка запроса сброса пароля:', error);
+        res.status(500).json({ error: 'Ошибка при запросе сброса пароля' });
+    }
+});
+
+// Сброс пароля по токену
+app.post('/api/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+        return res.status(400).json({ error: 'Токен и новый пароль обязательны' });
+    }
+    
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+    }
+    
+    const resetData = resetTokens[token];
+    if (!resetData) {
+        return res.status(400).json({ error: 'Неверный или устаревший токен' });
+    }
+    
+    if (Date.now() > resetData.expires) {
+        delete resetTokens[token];
+        return res.status(400).json({ error: 'Токен сброса пароля устарел' });
+    }
+    
+    try {
+        const user = users.find(u => u.id === resetData.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        // Хешируем новый пароль
+        const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+        user.password = hashedPassword;
+        
+        // Удаляем использованный токен
+        delete resetTokens[token];
+        
+        await saveUsers();
+        
+        // Уведомляем пользователя в Telegram
+        if (bot && user.telegramId) {
+            try {
+                await bot.sendMessage(user.telegramId,
+                    `✅ *Пароль успешно изменен!*\n\n` +
+                    `Пароль для вашего аккаунта *${user.username}* был успешно изменен.\n\n` +
+                    `Если это были не вы, немедленно свяжитесь с администрацией.`,
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (error) {
+                console.error('Ошибка отправки уведомления в Telegram:', error);
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Пароль успешно изменен' 
+        });
+    } catch (error) {
+        console.error('Ошибка сброса пароля:', error);
+        res.status(500).json({ error: 'Ошибка при сбросе пароля' });
+    }
+});
+
+// Проверка токена сброса пароля
+app.get('/api/check-reset-token/:token', async (req, res) => {
+    const token = req.params.token;
+    
+    if (!token) {
+        return res.status(400).json({ error: 'Токен не предоставлен' });
+    }
+    
+    const resetData = resetTokens[token];
+    if (!resetData) {
+        return res.status(400).json({ valid: false, error: 'Неверный или устаревший токен' });
+    }
+    
+    if (Date.now() > resetData.expires) {
+        delete resetTokens[token];
+        return res.status(400).json({ valid: false, error: 'Токен сброса пароля устарел' });
+    }
+    
+    // Возвращаем имя пользователя для информации
+    const user = users.find(u => u.id === resetData.userId);
+    res.json({ 
+        valid: true, 
+        username: user ? user.username : resetData.username 
+    });
 });
 
 // Привязка Telegram
@@ -609,6 +767,23 @@ setInterval(() => {
         console.log(`🧹 Очищено ${cleaned} устаревших сессий входа`);
     }
 }, 60 * 1000); // Каждую минуту
+
+// Очистка устаревших токенов сброса пароля
+setInterval(() => {
+    const now = Date.now();
+    let cleaned = 0;
+    
+    for (const token in resetTokens) {
+        if (resetTokens[token].expires < now) {
+            delete resetTokens[token];
+            cleaned++;
+        }
+    }
+    
+    if (cleaned > 0) {
+        console.log(`🧹 Очищено ${cleaned} устаревших токенов сброса пароля`);
+    }
+}, 5 * 60 * 1000); // Каждые 5 минут
 
 // Запуск сервера
 app.listen(PORT, () => {
