@@ -40,7 +40,7 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
                     }],
                     [{
                         text: '🌐 Перейти на сайт FanFik',
-                        url: 'https://your-fanfik-site.herokuapp.com'
+                        url: 'https://fanfik-go.onrender.com'
                     }]
                 ]
             };
