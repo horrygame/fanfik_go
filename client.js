@@ -689,6 +689,27 @@ class FanFikClient {
         };
         this.updateChaptersList();
     }
+    
+    // Функция для проверки причины удаления фанфика (для автора)
+    async checkDeletionReason(ficId) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            
+            const response = await fetch(`${this.apiBase}/api/deletion-reason/${ficId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error checking deletion reason:', error);
+            return null;
+        }
+    }
 }
 
 // Инициализация при загрузке страницы
