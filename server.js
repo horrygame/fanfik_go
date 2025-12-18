@@ -22,7 +22,7 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
             const chatId = msg.chat.id;
             bot.sendMessage(chatId, 
                 `👋 Привет! Я бот FanFik для двухфакторной аутентификации.\n\n` +
-                `Ваш Chat ID: \`{chatId}\`\n\n` +
+                `Ваш Chat ID: \`${chatId}\`\n\n` +
                 `📋 Как использовать:\n` +
                 `1. Скопируйте этот Chat ID\n` +
                 `2. На сайте FanFik введите его в поле привязки Telegram\n` +
