@@ -3,7 +3,7 @@ services:
     name: fanfik-platform
     env: node
     buildCommand: npm install
-    startCommand: npm run render-start
+    startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
