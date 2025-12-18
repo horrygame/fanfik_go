@@ -73,45 +73,7 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
                     `2. Выберите "Копировать текст"\n` +
                     `3. Вставьте скопированный ID на сайте FanFik`,
                     {
-                        parse_mode: 'Markdown',
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: '✅ Я скопировал Chat ID',
-                                    callback_data: 'copied_chat_id'
-                                }]
-                            ]
-                        }
-                    }
-                );
-            } else if (data === 'copied_chat_id') {
-                bot.answerCallbackQuery(callbackQuery.id, {
-                    text: 'Отлично! Теперь вставьте Chat ID на сайте FanFik.',
-                    show_alert: false
-                });
-                
-                bot.sendMessage(chatId,
-                    `🎉 Отлично! Теперь выполните следующие шаги:\n\n` +
-                    `1. Перейдите на сайт FanFik\n` +
-                    `2. Войдите в свой аккаунт\n` +
-                    `3. Нажмите "Привязать Telegram"\n` +
-                    `4. Вставьте скопированный Chat ID\n` +
-                    `5. Нажмите "Привязать аккаунт"\n\n` +
-                    `✅ После этого ваша учетная запись будет защищена двухфакторной аутентификацией!`,
-                    {
-                        parse_mode: 'Markdown',
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: '🌐 Открыть сайт FanFik',
-                                    url: 'https://your-fanfik-site.herokuapp.com'
-                                }]
-                            ]
-                        }
-                    }
-                );
-            }
-        });
+
         
         console.log('🤖 Telegram бот запущен с inline-кнопками');
     } catch (error) {
