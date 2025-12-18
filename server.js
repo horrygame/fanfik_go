@@ -23,40 +23,15 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
             const message = 
                 `👋 Привет! Я бот FanFik для двухфакторной аутентификации.\n\n` +
                 `Ваш Chat ID: \`${chatId}\`\n\n` +
-                `Нажмите кнопку ниже, чтобы скопировать Chat ID в буфер обмена.\n` +
+                `Нажмите на Chat ID выше, чтобы скопировать его.\n` +
                 `Затем вставьте его на сайте FanFik.`;
             
-            // Создаем inline-клавиатуру с одной кнопкой для копирования
-            const keyboard = {
-                inline_keyboard: [
-                    [{
-                        text: '📋 Скопировать Chat ID',
-                        callback_data: 'copy_chat_id'
-                    }]
-                ]
-            };
-            
             bot.sendMessage(chatId, message, {
-                parse_mode: 'Markdown',
-                reply_markup: keyboard
+                parse_mode: 'Markdown'
             });
         });
         
-        // Обработка нажатия на inline-кнопку
-        bot.on('callback_query', (callbackQuery) => {
-            const chatId = callbackQuery.message.chat.id;
-            const data = callbackQuery.data;
-            
-            if (data === 'copy_chat_id') {
-                // Показываем уведомление о копировании
-                bot.answerCallbackQuery(callbackQuery.id, {
-                    text: `Chat ID ${chatId} скопирован в буфер обмена!`,
-                    show_alert: true
-                });
-            }
-        });
-        
-        console.log('🤖 Telegram бот запущен с кнопкой копирования Chat ID');
+        console.log('🤖 Telegram бот запущен');
     } catch (error) {
         console.error('Ошибка запуска Telegram бота:', error);
         bot = null;
@@ -74,6 +49,7 @@ let users = [];
 let fics = [];
 let pendingLogins = {}; // Для хранения ожидающих подтверждения входов
 let resetTokens = {}; // Для хранения токенов сброса пароля
+let deletionReasons = {}; // Для хранения причин удаления фанфиков
 
 // Загрузка данных
 async function loadData() {
@@ -551,7 +527,18 @@ app.get('/api/fics', (req, res) => {
 
 // Получение конкретного фанфика по ID
 app.get('/api/fic/:id', (req, res) => {
-    const fic = fics.find(f => f.id === req.params.id && f.status === 'approved');
+    const fic = fics.find(f => f.id === req.params.id);
+    
+    if (!fic) {
+        return res.status(404).json({ error: 'Фанфик не найден' });
+    }
+    
+    res.json(fic);
+});
+
+// Получение фанфика для админа (включая pending)
+app.get('/api/admin/fic/:id', authenticateToken, checkAdmin, (req, res) => {
+    const fic = fics.find(f => f.id === req.params.id);
     
     if (!fic) {
         return res.status(404).json({ error: 'Фанфик не найден' });
@@ -686,15 +673,26 @@ app.post('/api/update-fic', authenticateToken, checkAdmin, async (req, res) => {
     }
 });
 
-// Удаление фанфика (админом)
+// Удаление фанфика с причиной (админом)
 app.delete('/api/delete-fic/:id', authenticateToken, checkAdmin, async (req, res) => {
-    const ficIndex = fics.findIndex(fic => fic.id === req.params.id);
+    const { reason } = req.body;
+    const ficId = req.params.id;
+    const ficIndex = fics.findIndex(fic => fic.id === ficId);
     
     if (ficIndex === -1) {
         return res.status(404).json({ error: 'Фанфик не найден' });
     }
     
     try {
+        // Сохраняем причину удаления
+        if (reason) {
+            deletionReasons[ficId] = {
+                reason: reason,
+                deletedAt: new Date().toISOString(),
+                deletedBy: req.user.username
+            };
+        }
+        
         // Удаляем фанфик
         const deletedFic = fics.splice(ficIndex, 1)[0];
         await saveFics();
@@ -704,23 +702,57 @@ app.delete('/api/delete-fic/:id', authenticateToken, checkAdmin, async (req, res
             const author = users.find(u => u.username === deletedFic.submittedBy);
             if (author && author.telegramId) {
                 try {
-                    await bot.sendMessage(author.telegramId,
-                        `⚠️ *Ваш фанфик удален*\n\n` +
-                        `"${deletedFic.title}" был удален администратором.\n\n` +
-                        `Если у вас есть вопросы, свяжитесь с администрацией.`,
-                        { parse_mode: 'Markdown' }
-                    );
+                    const message = reason 
+                        ? `⚠️ *Ваш фанфик удален*\n\n` +
+                          `"${deletedFic.title}" был удален администратором.\n\n` +
+                          `📝 *Причина удаления:*\n` +
+                          `${reason}\n\n` +
+                          `Если у вас есть вопросы, свяжитесь с администрацией.`
+                        : `⚠️ *Ваш фанфик удален*\n\n` +
+                          `"${deletedFic.title}" был удален администратором.\n\n` +
+                          `Если у вас есть вопросы, свяжитесь с администрацией.`;
+                    
+                    await bot.sendMessage(author.telegramId, message, { parse_mode: 'Markdown' });
                 } catch (error) {
                     console.error('Ошибка отправки уведомления автору:', error);
                 }
             }
         }
         
-        res.json({ success: true, message: 'Фанфик удален' });
+        res.json({ 
+            success: true, 
+            message: 'Фанфик удален',
+            reason: reason || null
+        });
     } catch (error) {
         console.error('Ошибка удаления фанфика:', error);
         res.status(500).json({ error: 'Ошибка при удалении фанфика' });
     }
+});
+
+// Получение причины удаления фанфика
+app.get('/api/deletion-reason/:ficId', authenticateToken, async (req, res) => {
+    const ficId = req.params.ficId;
+    const user = users.find(u => u.username === req.user.username);
+    
+    if (!user) {
+        return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+    
+    const reasonData = deletionReasons[ficId];
+    if (!reasonData) {
+        return res.status(404).json({ error: 'Причина удаления не найдена' });
+    }
+    
+    // Проверяем, является ли пользователь автором фанфика
+    const fic = fics.find(f => f.id === ficId);
+    if (!fic && user.username !== 'horrygame') {
+        // Проверяем, является ли пользователь автором удаленного фанфика
+        // Нужно хранить информацию об удаленных фанфиках отдельно
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    res.json(reasonData);
 });
 
 // Установка метки фанфику
