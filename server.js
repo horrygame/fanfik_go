@@ -20,18 +20,97 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== 'your-telegram-bot-token') {
         
         bot.onText(/\/start/, (msg) => {
             const chatId = msg.chat.id;
+            const username = msg.from.username || msg.from.first_name;
+            
+            // Создаем inline-кнопку с текстом для копирования
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: '📋 Скопировать мой Chat ID',
+                        callback_data: `copy_${chatId}`
+                    }]
+                ]
+            };
+            
             const message = 
-                `👋 Привет! Я бот FanFik для двухфакторной аутентификации.\n\n` +
-                `Ваш Chat ID: \`${chatId}\`\n\n` +
-                `Нажмите на Chat ID выше, чтобы скопировать его.\n` +
-                `Затем вставьте его на сайте FanFik.`;
+                `👋 Привет, ${username}! Я бот FanFik для двухфакторной аутентификации.\n\n` +
+                `*Ваш уникальный Chat ID:*\n` +
+                `\`${chatId}\`\n\n` +
+                `📋 *Как использовать:*\n` +
+                `1. Нажмите кнопку ниже, чтобы скопировать Chat ID\n` +
+                `2. Перейдите на сайт FanFik\n` +
+                `3. Войдите в свой аккаунт\n` +
+                `4. Нажмите "Привязать Telegram"\n` +
+                `5. Вставьте скопированный Chat ID\n` +
+                `6. Нажмите "Привязать аккаунт"\n\n` +
+                `✅ *После привязки:*\n` +
+                `• При входе на сайт будет приходить код подтверждения\n` +
+                `• Код действует 5 минут\n` +
+                `• Без кода войти в аккаунт невозможно\n\n` +
+                `🔒 *Безопасность:*\n` +
+                `• Никому не сообщайте этот Chat ID\n` +
+                `• Никому не передавайте коды подтверждения\n` +
+                `• При утере Chat ID обратитесь к администратору`;
             
             bot.sendMessage(chatId, message, {
-                parse_mode: 'Markdown'
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
             });
         });
         
-        console.log('🤖 Telegram бот запущен');
+        // Обработка нажатия на inline-кнопку
+        bot.on('callback_query', async (callbackQuery) => {
+            const chatId = callbackQuery.message.chat.id;
+            const messageId = callbackQuery.message.message_id;
+            const data = callbackQuery.data;
+            
+            // Проверяем, начинается ли callback_data с "copy_"
+            if (data.startsWith('copy_')) {
+                const copiedChatId = data.replace('copy_', '');
+                
+                try {
+                    // Отправляем ответ, что Chat ID скопирован
+                    await bot.answerCallbackQuery(callbackQuery.id, {
+                        text: `✅ Chat ID ${copiedChatId} скопирован в буфер обмена!`,
+                        show_alert: true
+                    });
+                    
+                    // Отправляем дополнительное сообщение с инструкцией
+                    setTimeout(async () => {
+                        await bot.sendMessage(chatId,
+                            `🎉 *Отлично! Chat ID скопирован!*\n\n` +
+                            `Теперь выполните следующие шаги:\n\n` +
+                            `1. Перейдите на сайт FanFik\n` +
+                            `2. Войдите в свой аккаунт (или зарегистрируйтесь)\n` +
+                            `3. Нажмите кнопку "Привязать Telegram"\n` +
+                            `4. Вставьте скопированный Chat ID в поле\n` +
+                            `5. Нажмите "Привязать аккаунт"\n\n` +
+                            `💡 *Совет:*\n` +
+                            `• Сохраните это сообщение, чтобы не потерять Chat ID\n` +
+                            `• Если возникли проблемы, напишите администратору\n` +
+                            `• Всегда проверяйте, что привязываете правильный Chat ID`,
+                            { parse_mode: 'Markdown' }
+                        );
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('Ошибка при обработке callback:', error);
+                    
+                    // Если не удалось отправить ответ, пытаемся отправить простое сообщение
+                    try {
+                        await bot.sendMessage(chatId,
+                            `✅ Chat ID скопирован: \`${copiedChatId}\`\n\n` +
+                            `Теперь вставьте его на сайте FanFik.`,
+                            { parse_mode: 'Markdown' }
+                        );
+                    } catch (sendError) {
+                        console.error('Ошибка отправки сообщения:', sendError);
+                    }
+                }
+            }
+        });
+        
+        console.log('🤖 Telegram бот запущен с кнопкой копирования Chat ID');
     } catch (error) {
         console.error('Ошибка запуска Telegram бота:', error);
         bot = null;
@@ -209,9 +288,18 @@ app.post('/api/login', async (req, res) => {
                     userId: user.id
                 };
                 
-                // Отправляем код в Telegram
+                // Отправляем код в Telegram с кнопкой для быстрого копирования
                 if (bot) {
                     try {
+                        const keyboard = {
+                            inline_keyboard: [
+                                [{
+                                    text: '📋 Скопировать код',
+                                    callback_data: `copy_code_${verificationCode}`
+                                }]
+                            ]
+                        };
+                        
                         await bot.sendMessage(user.telegramId,
                             `🔐 *Код подтверждения для входа в FanFik*\n\n` +
                             `Код: \`${verificationCode}\`\n` +
@@ -219,7 +307,10 @@ app.post('/api/login', async (req, res) => {
                             `Имя пользователя: ${username}\n` +
                             `Время: ${new Date().toLocaleTimeString('ru-RU')}\n\n` +
                             `_Если это были не вы, проигнорируйте это сообщение._`,
-                            { parse_mode: 'Markdown' }
+                            { 
+                                parse_mode: 'Markdown',
+                                reply_markup: keyboard
+                            }
                         );
                     } catch (error) {
                         console.error('Ошибка отправки кода в Telegram:', error);
@@ -278,6 +369,26 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: 'Ошибка при входе' });
     }
 });
+
+// Обработка callback для копирования кода подтверждения
+if (bot) {
+    bot.on('callback_query', async (callbackQuery) => {
+        const data = callbackQuery.data;
+        
+        if (data.startsWith('copy_code_')) {
+            const code = data.replace('copy_code_', '');
+            
+            try {
+                await bot.answerCallbackQuery(callbackQuery.id, {
+                    text: `✅ Код ${code} скопирован! Теперь вставьте его на сайте.`,
+                    show_alert: true
+                });
+            } catch (error) {
+                console.error('Ошибка при обработке копирования кода:', error);
+            }
+        }
+    });
+}
 
 // Запрос на сброс пароля
 app.post('/api/forgot-password', async (req, res) => {
@@ -469,6 +580,15 @@ app.post('/api/bind-telegram', authenticateToken, async (req, res) => {
         // Отправляем подтверждение в Telegram
         if (bot) {
             try {
+                const keyboard = {
+                    inline_keyboard: [
+                        [{
+                            text: '🎉 Открыть FanFik',
+                            url: `${req.headers.origin || 'http://localhost:3000'}`
+                        }]
+                    ]
+                };
+                
                 await bot.sendMessage(telegramId,
                     `✅ *Telegram успешно привязан!*\n\n` +
                     `Ваш аккаунт *${req.user.username}* на FanFik теперь защищен двухфакторной аутентификацией.\n\n` +
@@ -479,8 +599,14 @@ app.post('/api/bind-telegram', authenticateToken, async (req, res) => {
                     `🔒 *Безопасность:*\n` +
                     `• Никому не сообщайте коды подтверждения\n` +
                     `• Коды действуют 5 минут\n` +
-                    `• Без кода войти в аккаунт невозможно`,
-                    { parse_mode: 'Markdown' }
+                    `• Без кода войти в аккаунт невозможно\n\n` +
+                    `🎯 *Совет:*\n` +
+                    `• Сохраните это сообщение для быстрого доступа\n` +
+                    `• При проблемах обращайтесь к администратору`,
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: keyboard
+                    }
                 );
             } catch (error) {
                 console.error('Ошибка отправки подтверждения в Telegram:', error);
@@ -602,14 +728,26 @@ app.post('/api/submit-fic', authenticateToken, async (req, res) => {
         const admin = users.find(u => u.username === 'horrygame');
         if (admin && admin.telegramId && bot) {
             try {
+                const keyboard = {
+                    inline_keyboard: [
+                        [{
+                            text: '📋 Открыть админ-панель',
+                            url: `${req.headers.origin || 'http://localhost:3000'}/admin.html`
+                        }]
+                    ]
+                };
+                
                 await bot.sendMessage(admin.telegramId,
                     `📬 *Новый фанфик на проверку!*\n\n` +
                     `📖 Название: ${fic.title}\n` +
                     `👤 Автор: ${fic.author}\n` +
                     `🏷️ Жанры: ${fic.genre.join(', ')}\n` +
                     `📊 Глав: ${fic.chapters.length}\n\n` +
-                    `Зайдите в админ-панель для проверки.`,
-                    { parse_mode: 'Markdown' }
+                    `Нажмите кнопку ниже для проверки.`,
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: keyboard
+                    }
                 );
             } catch (error) {
                 console.error('Ошибка отправки уведомления админу:', error);
@@ -653,11 +791,23 @@ app.post('/api/update-fic', authenticateToken, checkAdmin, async (req, res) => {
                 const author = users.find(u => u.username === fics[ficIndex].submittedBy);
                 if (author && author.telegramId) {
                     try {
+                        const keyboard = {
+                            inline_keyboard: [
+                                [{
+                                    text: '📖 Читать свой фанфик',
+                                    url: `${req.headers.origin || 'http://localhost:3000'}`
+                                }]
+                            ]
+                        };
+                        
                         await bot.sendMessage(author.telegramId,
                             `🎉 *Ваш фанфик одобрен!*\n\n` +
                             `"${fics[ficIndex].title}" теперь опубликован на FanFik!\n\n` +
                             `Читатели смогут найти его в поиске. Продолжайте творить!`,
-                            { parse_mode: 'Markdown' }
+                            {
+                                parse_mode: 'Markdown',
+                                reply_markup: keyboard
+                            }
                         );
                     } catch (error) {
                         console.error('Ошибка отправки уведомления автору:', error);
